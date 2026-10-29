@@ -1,0 +1,797 @@
+
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Val Thorens 2027 Snowboard Interactive Map (18-23 Jan)</title>
+  <style>
+    :root {
+      --bg-main: #0a0a0c;
+      --bg-panel: #121216;
+      --bg-card: #1a1a20;
+      --border: #2a2a32;
+      --text-main: #f0f0f4;
+      --text-muted: #8e8e9e;
+      --accent: #ffffff;
+      --piste-green: #22c55e;
+      --piste-blue: #3b82f6;
+      --piste-red: #ef4444;
+      --piste-black: #a1a1aa;
+      --lift-color: #f59e0b;
+      --highlight: #38bdf8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    header {
+      height: 56px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      flex-shrink: 0;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+    .badge {
+      font-size: 11px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    /* Filters */
+    .filters { display: flex; gap: 8px; align-items: center; }
+    .filter-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { border-color: var(--accent); background: #262630; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.green { background: var(--piste-green); }
+    .dot.blue { background: var(--piste-blue); }
+    .dot.red { background: var(--piste-red); }
+    .dot.black { background: #000; border: 1.5px solid var(--piste-black); }
+    .dot.lift { background: var(--lift-color); }
+
+    /* Main Workspace */
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr 340px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left Panel: 6-Day Itinerary */
+    .panel-left, .panel-right {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 16px;
+      gap: 12px;
+    }
+    .panel-right { border-right: none; border-left: 1px solid var(--border); }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .day-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .day-card:hover { border-color: #555; }
+    .day-card.active {
+      border-color: var(--highlight);
+      background: rgba(56, 189, 248, 0.08);
+    }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .day-sub { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+    /* Center Map Area */
+    .map-container {
+      position: relative;
+      background: radial-gradient(circle at center, #161822 0%, #0a0a0c 100%);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #ski-map {
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #ski-map:active { cursor: grabbing; }
+
+    .map-legend {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(18, 18, 22, 0.9);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      pointer-events: none;
+    }
+    .map-controls {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 6px;
+    }
+    .ctrl-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    /* Right Panel: Inspector & Details */
+    .info-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .info-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .meta-row:last-child { border-bottom: none; }
+    .tag-warn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 8px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .step-list {
+      list-style: none;
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .step-list li {
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>VAL THORENS // SNOWBOARD TACTICAL MAP</h1>
+      <span class="badge">17–24 JAN 2027 (RIDING: 18–23 JAN)</span>
+      <span class="badge">2,300m – 3,230m</span>
+    </div>
+    <div class="filters" id="filter-bar">
+      <button class="filter-btn active" data-filter="all">全部顯示</button>
+      <button class="filter-btn active" data-type="piste" data-diff="green"><span class="dot green"></span>綠道</button>
+      <button class="filter-btn active" data-type="piste" data-diff="blue"><span class="dot blue"></span>藍道</button>
+      <button class="filter-btn active" data-type="piste" data-diff="red"><span class="dot red"></span>紅道</button>
+      <button class="filter-btn active" data-type="piste" data-diff="black"><span class="dot black"></span>黑道</button>
+      <button class="filter-btn active" data-type="lift"><span class="dot lift"></span>纜車 (Lifts)</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- Left: 6-Day Snowboard Itinerary -->
+    <aside class="panel-left">
+      <div class="section-title">每日行程規劃 (點擊高亮路線)</div>
+      <div id="itinerary-list">
+        <!-- Populated by Stage 3 Engine -->
+      </div>
+    </aside>
+
+    <!-- Center: Interactive SVG Map -->
+    <main class="map-container">
+      <div class="map-controls">
+        <button class="ctrl-btn" id="btn-reset-route">清除行程高亮</button>
+        <button class="ctrl-btn" id="btn-reset-zoom">置中地圖</button>
+      </div>
+      <svg id="ski-map" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow-lift" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#f59e0b" />
+          </marker>
+        </defs>
+        <g id="map-viewport">
+          <g id="layer-grid"></g>
+          <g id="layer-pistes"></g>
+          <g id="layer-lifts"></g>
+          <g id="layer-stations"></g>
+        </g>
+      </svg>
+      <div class="map-legend">
+        <div><strong>圖例與操作：</strong>滾輪縮放 / 按住拖曳地圖 / 點擊纜車或雪道睇詳情</div>
+        <div>⚡ <strong>虛線箭嘴 (橙色)：</strong>纜車上山方向及1月開放時間 (09:00 - 16:20)</div>
+        <div>🏂 <strong>實線 (綠/藍/紅/黑)：</strong>雪道滑降方向（粗體發光 = 當日推薦行程路線）</div>
+      </div>
+    </main>
+
+    <!-- Right: Selected Item & Daily Breakdown -->
+    <aside class="panel-right">
+      <div class="section-title">雪道 / 纜車實時資訊</div>
+      <div id="inspector-panel" class="info-box">
+        <div class="info-title">請點擊地圖上嘅纜車、雪道或左側行程</div>
+        <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
+          地圖已根據 Val Thorens 實際山谷方位（北面 Plein Sud / Col de la Chambre、東面 Péclet 冰川、東南 Boismint、西南 Cime Caron 及背面 Orelle）建模。
+        </p>
+      </div>
+
+      <div class="section-title" style="margin-top:8px;">當日行程明細 & Snowboard 貼士</div>
+      <div id="day-detail-panel" class="info-box">
+        <div class="info-title" style="font-size:13px;">尚未選擇日期</div>
+        <p style="font-size:12px; color:var(--text-muted);">點擊左邊 Day 1 – Day 6 查看每日早午路線、Carving/Buttering 推薦雪道及尾班纜車截龍時間。</p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ================= [STAGE 2: 貼上 VT_DATA 數據模組] =================
+const VT_DATA = {
+  stations: [
+    { id: "vt_village", name: "Val Thorens Village", alt: "2300m", x: 560, y: 450, hub: true },
+    { id: "vt_rond_point", name: "Rond Point des Pistes", alt: "2360m", x: 650, y: 400, hub: true },
+    { id: "deux_lacs_top", name: "Les 2 Lacs / Snowpark", alt: "2550m", x: 700, y: 310, hub: false },
+    { id: "plein_sud_top", name: "Sommet Pionniers / Plein Sud", alt: "2650m", x: 470, y: 240, hub: false },
+    { id: "col_chambre", name: "Col de la Chambre (3 Vallées Link)", alt: "2850m", x: 310, y: 120, hub: true },
+    { id: "moraine_top", name: "Sommet Moraine", alt: "2820m", x: 790, y: 220, hub: false },
+    { id: "peclet_glacier", name: "Glacier de Péclet", alt: "3000m", x: 870, y: 100, hub: true },
+    { id: "grand_fond", name: "Col du Grand Fond", alt: "3000m", x: 930, y: 230, hub: true },
+    { id: "plan_bouchet", name: "Plan Bouchet (Orelle Base)", alt: "2350m", x: 1080, y: 440, hub: true },
+    { id: "sommet_bouchet", name: "Pointe du Bouchet (Orelle Top)", alt: "3230m", x: 1130, y: 160, hub: true },
+    { id: "cairn_mid", name: "Cairn / Caron Base", alt: "2400m", x: 430, y: 520, hub: false },
+    { id: "plan_de_leau", name: "Plan de l'Eau", alt: "1800m", x: 330, y: 630, hub: true },
+    { id: "cime_caron", name: "Cime Caron", alt: "3200m", x: 190, y: 720, hub: true },
+    { id: "boismint_top", name: "Sommet Boismint", alt: "2735m", x: 620, y: 690, hub: false }
+  ],
+
+  lifts: [
+    { id: "L_funitel_peclet", name: "Funitel de Péclet", type: "Funitel (抗風纜車)", from: "vt_rond_point", to: "peclet_glacier", open: "09:00", close: "16:15", note: "雙纜抗強風，大風日子必搭主力線；上到3000m冰川。" },
+    { id: "L_funitel_grand_fond", name: "Funitel de Grand Fond", type: "Funitel (抗風纜車)", from: "deux_lacs_top", to: "grand_fond", open: "09:00", close: "16:10", note: "過 Orelle 第四山谷必經之路，注意回程時間。" },
+    { id: "L_funitel_3vallees", name: "Funitel 3 Vallées", type: "Funitel", from: "vt_rond_point", to: "col_chambre", open: "09:00", close: "16:20", note: "直達 2850m 頂峰，連接 Méribel / Les Menuires。" },
+    { id: "L_pionniers", name: "TSD Pionniers / Plein Sud", type: "6-Chair / Gondola", from: "vt_village", to: "plein_sud_top", open: "09:00", close: "16:30", note: "朝早出發極快，Plein Sud 向陽坡下晝雪質較軟。" },
+    { id: "L_moraine", name: "TC Moraine", type: "10-Gondola (廂型)", from: "vt_rond_point", to: "moraine_top", open: "09:00", close: "16:25", note: "Snowboarder 友善！可除板坐入車廂休息保暖，中段大藍道極闊。" },
+    { id: "L_col", name: "TSD du Col", type: "6-Chair", from: "moraine_top", to: "peclet_glacier", open: "09:10", close: "16:10", note: "由 Moraine 駁上冰川頂，風景極佳。" },
+    { id: "L_deux_lacs", name: "TC Les 2 Lacs", type: "Gondola / Chair", from: "vt_rond_point", to: "deux_lacs_top", open: "09:00", close: "16:30", note: "直達 Snowpark 同埋闊藍道練習區，練 Buttering 首選。" },
+    { id: "L_cairn", name: "TC Cairn / Caron", type: "Gondola", from: "vt_village", to: "cairn_mid", open: "09:00", close: "16:30", note: "去 Cime Caron 嘅第一段接駁廂型纜車。" },
+    { id: "L_tph_caron", name: "TPH Cime Caron", type: "Large Cable Car (大吊車)", from: "cairn_mid", to: "cime_caron", open: "09:10", close: "16:10", note: "150人大型吊車，直上3200m全景觀景台，10:30後易排長龍。" },
+    { id: "L_plan_leau", name: "TSD Plan de l'Eau", type: "6-Chair", from: "plan_de_leau", to: "cairn_mid", open: "09:00", close: "16:25", note: "由最低點 1800m 返上主村嘅生命線，注意尾班車！" },
+    { id: "L_boismint", name: "TSD Boismint", type: "6-Chair", from: "plan_de_leau", to: "boismint_top", open: "09:05", close: "16:15", note: "人流極少嘅隱藏紅道區，長距離 Carving 一流。" },
+    { id: "L_rosael", name: "TSD Rosaël / Orelle Caron", type: "6-Chair / Gondola", from: "plan_bouchet", to: "grand_fond", open: "09:05", close: "15:50", note: "⚠️ 警告：Orelle 返 Val Thorens 跨山谷尾班車極早 (15:50)，切勿錯過！" },
+    { id: "L_bouchet", name: "TC Orelle-Caron / Bouchet", type: "Gondola / Chair", from: "plan_bouchet", to: "sommet_bouchet", open: "09:15", close: "15:45", note: "登上全三峽谷最高點 3230m，天氣好先會開。" }
+  ],
+
+  pistes: [
+    { id: "P_2lacs_green", name: "Les 2 Lacs / Combe de Thorens", diff: "green", from: "deux_lacs_top", to: "vt_village", cx: 610, cy: 360, note: "極平緩熱身綠道，適合 Day 1 朝早搵返對腳嘅 Edge 感覺同練 Flatland Buttering。" },
+    { id: "P_dalles", name: "Dalles / Gentiane", diff: "blue", from: "moraine_top", to: "vt_rond_point", cx: 740, cy: 330, note: "路面極闊、斜度均勻，係全場練高角度 Carving 嘅頂級藍道。" },
+    { id: "P_pluviometre", name: "Pluviomètre", diff: "blue", from: "col_chambre", to: "vt_rond_point", cx: 480, cy: 290, note: "超長距離風景藍道；⚠️ 尾段返村前有一小段平路，記得提前 Keep 速度！" },
+    { id: "P_plein_sud", name: "Plein Sud", diff: "blue", from: "plein_sud_top", to: "vt_village", cx: 520, cy: 360, note: "向南陽光大道，朝早10點幾雪面微融最啱咬邊，下晝4點後多 Moguls (雪包)。" },
+    { id: "P_tete_ronde", name: "Tête Ronde", diff: "blue", from: "peclet_glacier", to: "deux_lacs_top", cx: 810, cy: 200, note: "3000m 冰川藍道，1月份雪質極乾爽 (Grippy Chalky Snow)，適合高速巡航。" },
+    { id: "P_col_red", name: "Col", diff: "red", from: "peclet_glacier", to: "moraine_top", cx: 850, cy: 170, note: "冰川直落紅道，無死角視野，適合拎住 Insta360 自拍桿拍高速 Carving。" },
+    { id: "P_christine", name: "Christine / Falaise", diff: "red", from: "grand_fond", to: "deux_lacs_top", cx: 840, cy: 290, note: "坡度紮實嘅高海拔紅道，中段極闊，練換刃節奏一流。" },
+    { id: "P_lac_blanc", name: "Lac Blanc / Allamands", diff: "red", from: "col_chambre", to: "plein_sud_top", cx: 360, cy: 190, note: "由 2850m 衝落嚟嘅爽快紅道，早場壓雪完美。" },
+    { id: "P_jerusalem", name: "Jérusalem (Towards St Martin Link)", diff: "blue", from: "col_chambre", to: "cairn_mid", cx: 290, cy: 340, note: "🔥 必滑神級雪道！天然波浪地形 (Rollers)，玩 Ollie 同 Buttering 爽度滿分。" },
+    { id: "P_audzin", name: "Col de l'Audzin", diff: "red", from: "cime_caron", to: "cairn_mid", cx: 330, cy: 600, note: "3200m 長距離紅道，1400米垂直落差（連埋下段），考驗大腿肌耐力。" },
+    { id: "P_combe_caron", name: "Combe de Caron", diff: "black", from: "cime_caron", to: "plan_de_leau", cx: 230, cy: 660, note: "傳奇級天然大碗黑道！無壓雪時係 Powder 天堂，壓雪後係極限 Steep Carving。⚠️ 最底接駁有長平路，必須全速衝出！" },
+    { id: "P_goitschel", name: "Goitschel / Cristaux", diff: "black", from: "grand_fond", to: "vt_rond_point", cx: 790, cy: 360, note: "陡峭直接嘅黑道，考驗陡坡 Short Turns 同 Edge Control。" },
+    { id: "P_boismint", name: "Boismint / Plan de l'Eau", diff: "red", from: "boismint_top", to: "plan_de_leau", cx: 470, cy: 690, note: "超過 900m 落差嘅連續長紅道，人少雪靚，下晝避開人潮首選。" },
+    { id: "P_cumin", name: "Boulevard Cumin", diff: "blue", from: "cairn_mid", to: "plan_de_leau", cx: 410, cy: 590, note: "連接主村去 1800m 底部嘅巡航藍道，風景開揚。" },
+    { id: "P_mauriennaise", name: "Mauriennaise / Gentianes", diff: "red", from: "grand_fond", to: "plan_bouchet", cx: 1030, cy: 350, note: "滑向 Orelle 陽光山谷嘅超長紅道，雪質極佳，但記住睇實時間返頭！" },
+    { id: "P_lory", name: "Lory", diff: "blue", from: "grand_fond", to: "plan_bouchet", cx: 990, cy: 390, note: "Orelle 區寬敞藍道；⚠️ 中後段比較平緩，Snowboard 切忌減速。" },
+    { id: "P_coraia", name: "Coraïa / Bouchet", diff: "red", from: "sommet_bouchet", to: "plan_bouchet", cx: 1140, cy: 310, note: "由全場最高點 3230m 滑落嘅高海拔紅道，空氣稀薄但雪質頂級。" }
+  ],
+
+  days: [
+    {
+      day: 1,
+      date: "18 Jan 2027 (Mon)",
+      title: "Day 1：高海拔適應 + 搵返 Edge Control 腳感",
+      focus: "Les 2 Lacs / Moraine 闊藍道熱身 & Flatland Buttering",
+      lifts: ["L_deux_lacs", "L_moraine", "L_pionniers"],
+      pistes: ["P_2lacs_green", "P_dalles", "P_plein_sud"],
+      boardTip: "第一日上到 2300m–2800m 先適應海拔，喺 Dalles 藍道用 +15/-15 duck stance 練返前後刃轉換同 Nose/Tail Press，下晝 3:30 後 Plein Sud 多雪包可提早收工。",
+      schedule: [
+        "09:00 - 10:30：搭 TC Les 2 Lacs，滑綠道 Combe de Thorens 檢查 Binding 角度同熱身。",
+        "10:30 - 12:30：轉戰 TC Moraine，狂刷 Dalles 闊藍道練大S Carving。",
+        "12:30 - 13:45：Rond Point des Pistes 午餐休息。",
+        "13:45 - 16:00：搭 Pionniers 滑 Plein Sud，再去 Les 2 Lacs Snowpark 外圍練 Flatland Buttering。"
+      ]
+    },
+    {
+      day: 2,
+      date: "19 Jan 2027 (Tue)",
+      title: "Day 2：3000m Péclet 冰川極速 Carving",
+      focus: "Glacier de Péclet + Grand Fond 高海拔粉雪/硬雪咬邊",
+      lifts: ["L_funitel_peclet", "L_moraine", "L_col", "L_funitel_grand_fond"],
+      pistes: ["P_tete_ronde", "P_col_red", "P_christine", "P_dalles"],
+      boardTip: "1月份 3000m 冰川雪質極乾極 Grippy，非常適合拍 Insta360 X5 貼地 Carving 鏡頭；山上氣溫可低至 -12°C，注意相機電池保溫。",
+      schedule: [
+        "09:00 - 11:00：頭班車上 Funitel de Péclet (3000m)，趁未有人滑爆 Tête Ronde 藍道同 Col 紅道。",
+        "11:00 - 12:30：用 TSD du Col 重複刷冰川上半段，測試高速 Edge Hold。",
+        "13:30 - 15:45：轉搭 Funitel de Grand Fond (3000m)，滑 Christine 紅道落返 Les 2 Lacs。"
+      ]
+    },
+    {
+      day: 3,
+      date: "20 Jan 2027 (Wed)",
+      title: "Day 3：Col de la Chambre + 神級波浪道 Jérusalem",
+      focus: "北面山脊巡航 + 天然 Rollers 地形 Freestyle",
+      lifts: ["L_funitel_3vallees", "L_pionniers", "L_plan_leau"],
+      pistes: ["P_lac_blanc", "P_jerusalem", "P_pluviometre", "P_cumin"],
+      boardTip: "Jérusalem 係無數 Snowboarder 公認全三峽谷最好玩嘅天然波浪藍道，記得開啟頭盔/自拍桿 360 相機拍 Side-hits 同 Ollie！",
+      schedule: [
+        "09:00 - 11:30：搭 Funitel 3 Vallées 直上 Col de la Chambre (2850m)，先刷 Lac Blanc 紅道。",
+        "11:30 - 13:00：由頂峰滑入 Jérusalem 藍道，享受連續天然波浪地形，一路滑落 Cairn / Plan de l'Eau。",
+        "14:00 - 16:10：再上 Col de la Chambre 滑超長藍道 Pluviomètre 返村（尾段平路記得 Keep 速）。"
+      ]
+    },
+    {
+      day: 4,
+      date: "21 Jan 2027 (Thu)",
+      title: "Day 4：遠征 Orelle 第四山谷 + 3230m 最高峰",
+      focus: "跨山谷向陽長紅道 + 避開主村人潮",
+      lifts: ["L_deux_lacs", "L_funitel_grand_fond", "L_bouchet", "L_rosael"],
+      pistes: ["P_mauriennaise", "P_coraia", "P_lory", "P_christine"],
+      boardTip: "⚠️ 鐵律：Orelle 返 Val Thorens 嘅 Rosaël 纜車 15:50 截龍！建議 15:00 前必須開始排隊回程；滑 Lory 藍道尾段較平，切勿隨便煞車。",
+      schedule: [
+        "09:00 - 10:00：由 Les 2 Lacs 駁 Funitel Grand Fond 翻過山脊進入 Orelle 區。",
+        "10:00 - 12:30：搭 Bouchet 衝上全場最高點 3230m，滑 Coraïa 同 Mauriennaise 紅道。",
+        "12:30 - 13:45：喺 Plan Bouchet (2350m) 陽光露台午餐。",
+        "13:45 - 15:15：刷多兩轉 Mauriennaise，15:15 準時搭 Rosaël 返過 Grand Fond 落山。"
+      ]
+    },
+    {
+      day: 5,
+      date: "22 Jan 2027 (Fri)",
+      title: "Day 5：Cime Caron 3200m 攻頂 + Boismint 秘境",
+      focus: "1400m 超長垂直落差 + 黑道陡坡控制",
+      lifts: ["L_cairn", "L_tph_caron", "L_boismint", "L_plan_leau"],
+      pistes: ["P_audzin", "P_combe_caron", "P_boismint", "P_cumin"],
+      boardTip: "滑 Combe de Caron 黑道或 Audzin 紅道落到最底接駁 Plan de l'Eau 之前有一條長 Cat-track 平路，見到平路標誌前 100 米必須直板全速衝過去！",
+      schedule: [
+        "09:00 - 09:45：一早搭 Cairn 駁 TPH Cime Caron 大吊車（避開10點後人龍），上 3200m 影勃朗峰全景。",
+        "09:45 - 12:30：先滑紅道 Col de l'Audzin 熱身，第二轉挑戰傳奇黑道 Combe de Caron 直落 1800m。",
+        "13:30 - 16:00：下晝留喺 Plan de l'Eau 搭 TSD Boismint，獨享人少雪靚嘅 Boismint 長紅道。"
+      ]
+    },
+    {
+      day: 6,
+      date: "23 Jan 2027 (Sat)",
+      title: "Day 6：精華重溫 + 360 航拍級收官日",
+      focus: "自選最愛 Carving / Buttering 雪道 + 輕鬆收爐",
+      lifts: ["L_moraine", "L_funitel_3vallees", "L_deux_lacs"],
+      pistes: ["P_dalles", "P_jerusalem", "P_2lacs_green", "P_goitschel"],
+      boardTip: "最後一日體力消耗較大，專注朝早黃金壓雪時段拍片（Dalles 高速 Carving + Jérusalem 波浪跳台），下晝 3 點後輕鬆滑綠藍道安全收官。",
+      schedule: [
+        "09:00 - 11:00：趁星期六交接日全場最少人！直衝 Moraine 同 Col de la Chambre 狂刷無人 Corduroy（麵條雪）。",
+        "11:00 - 13:00：重溫 Jérusalem 波浪道同埋挑戰 Goitschel 黑道。",
+        "14:00 - 15:45：返 Les 2 Lacs 練習區玩 Flatland Tricks，提早去 La Folie Douce 或村內嘆返杯慶祝完滿結束。"
+      ]
+    }
+  ]
+};
+
+  (function initApp() {
+  const svg = document.getElementById("ski-map");
+  const viewport = document.getElementById("map-viewport");
+  const layerGrid = document.getElementById("layer-grid");
+  const layerPistes = document.getElementById("layer-pistes");
+  const layerLifts = document.getElementById("layer-lifts");
+  const layerStations = document.getElementById("layer-stations");
+  const inspector = document.getElementById("inspector-panel");
+  const dayDetail = document.getElementById("day-detail-panel");
+  const itineraryList = document.getElementById("itinerary-list");
+
+  const stationMap = {};
+  VT_DATA.stations.forEach(s => { stationMap[s.id] = s; });
+
+  const diffColors = {
+    green: "#22c55e",
+    blue: "#3b82f6",
+    red: "#ef4444",
+    black: "#e4e4e7"
+  };
+  const diffNames = {
+    green: "綠道 (Green / Easy)",
+    blue: "藍道 (Blue / Carving Cruiser)",
+    red: "紅道 (Red / Intermediate-Advanced)",
+    black: "黑道 (Black / Expert Steep)"
+  };
+
+  function createSvgEl(tag, attrs) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  // 1. 繪製海拔背景網格與方位標示
+  function renderBackdrop() {
+    const zones = [
+      { x: 310, y: 70, text: "▲ NORTH: COL DE LA CHAMBRE (2850m) → MÉRIBEL" },
+      { x: 870, y: 55, text: "▲ EAST: GLACIER DE PÉCLET (3000m)" },
+      { x: 1110, y: 115, text: "▲ ORELLE 4TH VALLEY (3230m MAX)" },
+      { x: 200, y: 765, text: "▲ SOUTH-WEST: CIME CARON (3200m)" },
+      { x: 330, y: 665, text: "▼ PLAN DE L'EAU (1800m LOWEST POINT)" }
+    ];
+    zones.forEach(z => {
+      const label = createSvgEl("text", {
+        x: z.x, y: z.y,
+        fill: "#52525b",
+        "font-size": "11",
+        "font-weight": "600",
+        "text-anchor": "middle",
+        "letter-spacing": "1"
+      });
+      label.textContent = z.text;
+      layerGrid.appendChild(label);
+    });
+  }
+
+  // 2. 繪製雪道 (Quadratic Bezier Curves)
+  function renderPistes() {
+    VT_DATA.pistes.forEach(p => {
+      const sFrom = stationMap[p.from];
+      const sTo = stationMap[p.to];
+      if (!sFrom || !sTo) return;
+
+      const d = `M ${sFrom.x} ${sFrom.y} Q ${p.cx} ${p.cy} ${sTo.x} ${sTo.y}`;
+      const group = createSvgEl("g", {
+        class: "map-item piste-item",
+        "data-id": p.id,
+        "data-type": "piste",
+        "data-diff": p.diff,
+        style: "cursor:pointer; transition: opacity 0.2s;"
+      });
+
+      // 隱形加粗點擊區
+      const hitArea = createSvgEl("path", {
+        d, fill: "none", stroke: "transparent", "stroke-width": "16"
+      });
+
+      // 實際雪道線條
+      const path = createSvgEl("path", {
+        d,
+        fill: "none",
+        stroke: diffColors[p.diff],
+        "stroke-width": p.diff === "black" ? "3.5" : "3",
+        "stroke-dasharray": p.diff === "black" ? "6,3" : "none",
+        "stroke-linecap": "round",
+        class: "visual-path"
+      });
+
+      // 雪道中段標籤
+      const mx = 0.25 * sFrom.x + 0.5 * p.cx + 0.25 * sTo.x;
+      const my = 0.25 * sFrom.y + 0.5 * p.cy + 0.25 * sTo.y;
+      const tag = createSvgEl("text", {
+        x: mx, y: my - 6,
+        fill: diffColors[p.diff],
+        "font-size": "10",
+        "font-weight": "600",
+        "text-anchor": "middle",
+        style: "paint-order: stroke; stroke: #0a0a0c; stroke-width: 3px;"
+      });
+      tag.textContent = p.name.split(" ")[0];
+
+      group.appendChild(hitArea);
+      group.appendChild(path);
+      group.appendChild(tag);
+      group.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showPisteInfo(p, sFrom, sTo);
+      });
+      layerPistes.appendChild(group);
+    });
+  }
+
+  // 3. 繪製纜車線 (虛線 + 方向箭嘴)
+  function renderLifts() {
+    VT_DATA.lifts.forEach(l => {
+      const sFrom = stationMap[l.from];
+      const sTo = stationMap[l.to];
+      if (!sFrom || !sTo) return;
+
+      const d = `M ${sFrom.x} ${sFrom.y} L ${sTo.x} ${sTo.y}`;
+      const group = createSvgEl("g", {
+        class: "map-item lift-item",
+        "data-id": l.id,
+        "data-type": "lift",
+        style: "cursor:pointer; transition: opacity 0.2s;"
+      });
+
+      const hitArea = createSvgEl("path", {
+        d, fill: "none", stroke: "transparent", "stroke-width": "14"
+      });
+
+      const line = createSvgEl("path", {
+        d,
+        fill: "none",
+        stroke: "#f59e0b",
+        "stroke-width": "2",
+        "stroke-dasharray": "4,4",
+        "marker-end": "url(#arrow-lift)",
+        class: "visual-path"
+      });
+
+      const mx = (sFrom.x + sTo.x) / 2;
+      const my = (sFrom.y + sTo.y) / 2;
+      const label = createSvgEl("text", {
+        x: mx, y: my + 12,
+        fill: "#fbbf24",
+        "font-size": "9.5",
+        "text-anchor": "middle",
+        style: "paint-order: stroke; stroke: #0a0a0c; stroke-width: 3px;"
+      });
+      label.textContent = `⚡ ${l.name} (${l.close}截)`;
+
+      group.appendChild(hitArea);
+      group.appendChild(line);
+      group.appendChild(label);
+      group.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showLiftInfo(l, sFrom, sTo);
+      });
+      layerLifts.appendChild(group);
+    });
+  }
+
+  // 4. 繪製纜車站節點
+  function renderStations() {
+    VT_DATA.stations.forEach(s => {
+      const g = createSvgEl("g", {
+        transform: `translate(${s.x}, ${s.y})`,
+        style: "cursor:pointer;"
+      });
+
+      const circle = createSvgEl("circle", {
+        r: s.hub ? "7" : "5",
+        fill: s.hub ? "#ffffff" : "#27272a",
+        stroke: "#38bdf8",
+        "stroke-width": s.hub ? "2.5" : "1.5"
+      });
+
+      const text = createSvgEl("text", {
+        x: 0, y: -11,
+        fill: "#f4f4f5",
+        "font-size": s.hub ? "11.5" : "10",
+        "font-weight": s.hub ? "700" : "500",
+        "text-anchor": "middle",
+        style: "paint-order: stroke; stroke: #0a0a0c; stroke-width: 3.5px;"
+      });
+      text.textContent = `${s.name} (${s.alt})`;
+
+      g.appendChild(circle);
+      g.appendChild(text);
+      g.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showStationInfo(s);
+      });
+      layerStations.appendChild(g);
+    });
+  }
+
+  // 5. 右側詳情欄顯示器
+  function showPisteInfo(p, sFrom, sTo) {
+    inspector.innerHTML = `
+      <div class="info-title" style="color:${diffColors[p.diff]}">🏂 ${p.name}</div>
+      <div class="meta-row"><span>難度級別</span><strong>${diffNames[p.diff]}</strong></div>
+      <div class="meta-row"><span>起點站</span><span>${sFrom.name} (${sFrom.alt})</span></div>
+      <div class="meta-row"><span>終點站</span><span>${sTo.name} (${sTo.alt})</span></div>
+      <p style="font-size:12px; margin-top:10px; line-height:1.5; color:var(--text-main);">${p.note}</p>
+    `;
+  }
+
+  function showLiftInfo(l, sFrom, sTo) {
+    inspector.innerHTML = `
+      <div class="info-title" style="color:#f59e0b">⚡ ${l.name}</div>
+      <div class="meta-row"><span>纜車類型</span><strong>${l.type}</strong></div>
+      <div class="meta-row"><span>1月開放時間</span><strong>${l.open} – ${l.close}</strong></div>
+      <div class="meta-row"><span>上山路線</span><span>${sFrom.alt} ➔ ${sTo.alt}</span></div>
+      <div class="tag-warn">🕒 1月深冬尾班車截龍：${l.close}</div>
+      <p style="font-size:12px; margin-top:10px; line-height:1.5; color:var(--text-main);">${l.note}</p>
+    `;
+  }
+
+  function showStationInfo(s) {
+    const outLifts = VT_DATA.lifts.filter(l => l.from === s.id);
+    const outPistes = VT_DATA.pistes.filter(p => p.from === s.id);
+    inspector.innerHTML = `
+      <div class="info-title">📍 ${s.name} (${s.alt})</div>
+      <div class="meta-row"><span>出發纜車數</span><strong>${outLifts.length} 條</strong></div>
+      <div class="meta-row"><span>下滑雪道數</span><strong>${outPistes.length} 條</strong></div>
+      <ul class="step-list">
+        ${outLifts.map(l => `<li>⚡ <strong>${l.name}</strong> (尾班 ${l.close})</li>`).join("")}
+        ${outPistes.map(p => `<li>🏂 <span style="color:${diffColors[p.diff]}">[${p.diff.toUpperCase()}]</span> ${p.name}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  // 6. 左側 6日行程渲染與一鍵高亮
+  function renderItinerary() {
+    VT_DATA.days.forEach(d => {
+      const card = document.createElement("div");
+      card.className = "day-card";
+      card.innerHTML = `
+        <div class="day-header">
+          <span>${d.date}</span>
+          <span style="color:var(--highlight)">Day ${d.day}</span>
+        </div>
+        <div style="font-size:12.5px; font-weight:600; margin-bottom:4px;">${d.title}</div>
+        <div class="day-sub">${d.focus}</div>
+      `;
+      card.addEventListener("click", () => {
+        document.querySelectorAll(".day-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+        highlightDayRoute(d);
+      });
+      itineraryList.appendChild(card);
+    });
+  }
+
+  function highlightDayRoute(d) {
+    const activeSet = new Set([...d.lifts, ...d.pistes]);
+    document.querySelectorAll(".map-item").forEach(el => {
+      const id = el.getAttribute("data-id");
+      const vPath = el.querySelector(".visual-path");
+      if (activeSet.has(id)) {
+        el.style.opacity = "1";
+        if (vPath) {
+          vPath.setAttribute("stroke-width", "5.5");
+          vPath.style.filter = "drop-shadow(0 0 6px rgba(56, 189, 248, 0.85))";
+        }
+      } else {
+        el.style.opacity = "0.15";
+        if (vPath) {
+          vPath.setAttribute("stroke-width", el.getAttribute("data-type") === "lift" ? "2" : "3");
+          vPath.style.filter = "none";
+        }
+      }
+    });
+
+    dayDetail.innerHTML = `
+      <div class="info-title" style="color:var(--highlight)">${d.date} — ${d.title}</div>
+      <div class="tag-warn" style="background:rgba(56,189,248,0.12); border-color:rgba(56,189,248,0.4); color:#7dd3fc;">
+        🏂 Snowboard 戰術貼士：${d.boardTip}
+      </div>
+      <ul class="step-list" style="margin-top:10px;">
+        ${d.schedule.map(step => `<li>${step}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  function resetHighlight() {
+    document.querySelectorAll(".day-card").forEach(c => c.classList.remove("active"));
+    document.querySelectorAll(".map-item").forEach(el => {
+      el.style.opacity = "1";
+      const vPath = el.querySelector(".visual-path");
+      if (vPath) {
+        vPath.setAttribute("stroke-width", el.getAttribute("data-type") === "lift" ? "2" : "3");
+        vPath.style.filter = "none";
+      }
+    });
+  }
+
+  // 7. 頂部 Filter 控制
+  document.querySelectorAll("#filter-bar .filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const isAll = btn.getAttribute("data-filter") === "all";
+      if (isAll) {
+        document.querySelectorAll("#filter-bar .filter-btn").forEach(b => b.classList.add("active"));
+        resetHighlight();
+        document.querySelectorAll(".map-item").forEach(el => el.style.display = "block");
+        return;
+      }
+      btn.classList.toggle("active");
+      const type = btn.getAttribute("data-type");
+      const diff = btn.getAttribute("data-diff");
+      const show = btn.classList.contains("active");
+
+      document.querySelectorAll(".map-item").forEach(el => {
+        if (type === "lift" && el.getAttribute("data-type") === "lift") {
+          el.style.display = show ? "block" : "none";
+        } else if (type === "piste" && el.getAttribute("data-diff") === diff) {
+          el.style.display = show ? "block" : "none";
+        }
+      });
+    });
+  });
+
+  // 8. 滑鼠滾輪 Zoom & Drag Pan 支援
+  let scale = 1, panX = 0, panY = 0, isDragging = false, startX = 0, startY = 0;
+  function updateTransform() {
+    viewport.setAttribute("transform", `translate(${panX}, ${panY}) scale(${scale})`);
+  }
+
+  svg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+    scale = Math.min(Math.max(0.6, scale * zoomFactor), 3.2);
+    updateTransform();
+  });
+
+  svg.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    updateTransform();
+  });
+  window.addEventListener("mouseup", () => { isDragging = false; });
+
+  document.getElementById("btn-reset-route").addEventListener("click", resetHighlight);
+  document.getElementById("btn-reset-zoom").addEventListener("click", () => {
+    scale = 1; panX = 0; panY = 0; updateTransform();
+  });
+
+  // 啟動渲染並預設載入 Day 1
+  renderBackdrop();
+  renderPistes();
+  renderLifts();
+  renderStations();
+  renderItinerary();
+  document.querySelector(".day-card").click();
+})();
+  // ================= [STAGE 3: 貼上 VT_ENGINE 互動與渲染邏輯] =================
+  </script>
+</body>
+</html>
