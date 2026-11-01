@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Val Thorens 2027 GPS Snowboard Navigator & Live Cams</title>
+  <title>Val Thorens 2027 // Full Piste Builder & Route Planner</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root {
       --bg-main: #0a0a0c;
       --bg-panel: #121216;
-      --bg-card: #1a1a20;
-      --border: #2a2a34;
+      --bg-card: #1a1a22;
+      --border: #2a2a36;
       --text-main: #f4f4f6;
-      --text-muted: #9494a6;
+      --text-muted: #9494a8;
       --piste-green: #22c55e;
       --piste-blue: #3b82f6;
       --piste-red: #ef4444;
-      --piste-black: #a1a1aa;
+      --piste-black: #e4e4e7;
       --lift-color: #f59e0b;
       --highlight: #38bdf8;
     }
@@ -32,7 +32,7 @@
       overflow: hidden;
     }
 
-    /* Top Bar */
+    /* Header & Cumulative Difficulty Filter */
     header {
       height: 58px;
       background: var(--bg-panel);
@@ -40,12 +40,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 18px;
+      padding: 0 16px;
       flex-shrink: 0;
       z-index: 1000;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
-    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+    .brand h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; }
     .badge {
       font-size: 11px;
       background: var(--bg-card);
@@ -55,14 +55,13 @@
       color: var(--highlight);
     }
 
-    /* Cumulative Difficulty Filters */
     .filters { display: flex; gap: 6px; align-items: center; }
-    .filter-label { font-size: 11px; color: var(--text-muted); margin-right: 4px; }
+    .filter-label { font-size: 11px; color: var(--text-muted); margin-right: 2px; }
     .lvl-btn {
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-main);
-      padding: 6px 11px;
+      padding: 6px 10px;
       border-radius: 6px;
       font-size: 12px;
       cursor: pointer;
@@ -73,7 +72,7 @@
     }
     .lvl-btn.active {
       border-color: var(--highlight);
-      background: rgba(56, 189, 248, 0.15);
+      background: rgba(56, 189, 248, 0.16);
       font-weight: 600;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
@@ -82,10 +81,10 @@
     .dot.red { background: var(--piste-red); }
     .dot.black { background: #111; border: 1.5px solid #fff; }
 
-    /* Workspace Layout */
+    /* 3-Column Workspace */
     .workspace {
       display: grid;
-      grid-template-columns: 340px 1fr 350px;
+      grid-template-columns: 320px 1fr 380px;
       flex: 1;
       overflow: hidden;
     }
@@ -94,90 +93,88 @@
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      padding: 14px;
-      gap: 12px;
+      overflow: hidden;
+      padding: 12px;
+      gap: 10px;
     }
-    .panel-right { border-right: none; border-left: 1px solid var(--border); }
+    .panel-right { border-right: none; border-left: 1px solid var(--border); overflow-y: auto; }
     .section-title {
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    /* A to B Route Planner Card */
-    .planner-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
+    /* Left Panel: Directory & Search */
+    .search-box {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
-    .form-row { display: flex; flex-direction: column; gap: 4px; }
-    .form-row label { font-size: 11px; color: var(--text-muted); }
-    select {
-      background: #101014;
+    input[type="text"], select {
+      background: #0e0e12;
       color: var(--text-main);
       border: 1px solid var(--border);
-      padding: 7px 8px;
+      padding: 7px 10px;
       border-radius: 6px;
       font-size: 12px;
       outline: none;
+      width: 100%;
     }
-    .mode-switch {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 2px;
-    }
-    .mode-btn {
-      background: #101014;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 6px;
-      border-radius: 6px;
-      font-size: 11px;
-      cursor: pointer;
-      text-align: center;
-    }
-    .mode-btn.active {
-      border-color: var(--highlight);
-      color: var(--text-main);
-      background: rgba(56, 189, 248, 0.12);
-      font-weight: 600;
-    }
-    .btn-route {
-      background: var(--highlight);
-      color: #000;
-      border: none;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 4px;
-    }
+    input[type="text"]:focus, select:focus { border-color: var(--highlight); }
 
-    /* Day Itinerary Cards */
-    .day-card {
+    .dir-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+    .tab-btn {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
+      color: var(--text-muted);
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 11px;
       cursor: pointer;
-      transition: all 0.15s;
     }
-    .day-card:hover { border-color: #555; }
-    .day-card.active {
-      border-color: var(--highlight);
-      background: rgba(56, 189, 248, 0.08);
+    .tab-btn.active { color: var(--text-main); border-color: var(--highlight); font-weight: 600; }
+
+    #directory-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-right: 4px;
     }
-    .day-header { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 3px; }
-    .day-sub { font-size: 11.5px; color: var(--text-muted); }
+    .dir-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border 0.15s;
+    }
+    .dir-item:hover { border-color: #666; }
+    .dir-item-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+    .dir-item-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dir-item-sub { font-size: 10.5px; color: var(--text-muted); }
+    .btn-add-step {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--highlight);
+      color: var(--highlight);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .btn-add-step:hover { background: var(--highlight); color: #000; }
 
     /* Center Map */
     .map-wrapper { position: relative; width: 100%; height: 100%; }
@@ -185,7 +182,7 @@
     .map-overlay-bar {
       position: absolute;
       top: 12px;
-      left: 54px;
+      left: 52px;
       z-index: 900;
       display: flex;
       gap: 6px;
@@ -199,43 +196,115 @@
       border-radius: 6px;
       font-size: 11.5px;
       cursor: pointer;
-      backdrop-filter: blur(6px);
     }
     .chip-btn.active { border-color: var(--highlight); color: var(--highlight); }
 
-    /* Right Inspector & Results */
-    .info-box {
+    .status-banner {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 900;
+      background: rgba(18, 18, 22, 0.92);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      color: var(--text-main);
+      pointer-events: none;
+    }
+
+    /* Right Panel: Active Builder & Saved Combinations */
+    .builder-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
-    .info-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-    .meta-row {
+    .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .active-steps-list {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      padding: 6px;
+      min-height: 60px;
+    }
+    .step-chip {
+      background: #101015;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 11.5px;
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
+      align-items: center;
+      gap: 6px;
     }
-    .step-list { list-style: none; margin-top: 6px; font-size: 12px; line-height: 1.5; }
-    .step-list li { padding: 6px 0; border-bottom: 1px dashed var(--border); }
-    .tag-warn {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 4px 8px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
+    .step-actions { display: flex; gap: 4px; }
+    .mini-btn {
+      background: #22222c;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 2px 6px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 10px;
+      cursor: pointer;
     }
+    .mini-btn.del { color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+
+    .btn-primary {
+      background: var(--highlight);
+      color: #000;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: #22222c;
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 7px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+
+    /* Saved Combinations List */
+    #saved-combos-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .combo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .combo-card.active { border-color: var(--highlight); background: rgba(56, 189, 248, 0.08); }
+    .combo-header { display: flex; justify-content: space-between; align-items: center; }
+    .combo-title { font-size: 13px; font-weight: 700; }
+    .combo-day { font-size: 11px; color: var(--highlight); font-weight: 600; }
+    .combo-steps-preview { font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+    .combo-actions { display: flex; gap: 6px; margin-top: 4px; }
 
     /* Live Cam Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.82);
       z-index: 2000;
       display: none;
       align-items: center;
@@ -250,8 +319,6 @@
       width: 100%;
       max-width: 860px;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
     }
     .modal-header {
       padding: 12px 16px;
@@ -263,7 +330,6 @@
     .modal-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
     .cam-frame { width: 100%; height: 460px; border: 1px solid var(--border); border-radius: 6px; background: #000; }
     .ext-link {
-      display: inline-block;
       background: var(--highlight);
       color: #000;
       text-decoration: none;
@@ -271,7 +337,6 @@
       border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
-      text-align: center;
     }
   </style>
 </head>
@@ -279,73 +344,100 @@
 
   <header>
     <div class="brand">
-      <h1>VAL THORENS // GPS SNOWBOARD NAVIGATOR</h1>
-      <span class="badge">🏠 Base: Les Cimes de Caron (470 Grande Rue)</span>
-      <span class="badge">18–23 JAN 2027</span>
+      <h1>VAL THORENS // CUSTOM ROUTE BUILDER</h1>
+      <span class="badge">🏠 470 Grande Rue (Les Cimes de Caron)</span>
+      <span class="badge" id="osm-count-badge">載入全場雪道中...</span>
     </div>
     <div class="filters">
-      <span class="filter-label">累積難度顯示 (或以下)：</span>
+      <span class="filter-label">累積難度 Filter：</span>
       <button class="lvl-btn" data-level="1"><span class="dot green"></span>只睇綠道</button>
       <button class="lvl-btn" data-level="2"><span class="dot blue"></span>藍道或以下</button>
       <button class="lvl-btn" data-level="3"><span class="dot red"></span>紅道或以下</button>
-      <button class="lvl-btn active" data-level="4"><span class="dot black"></span>全部難度 (含黑道)</button>
+      <button class="lvl-btn active" data-level="4"><span class="dot black"></span>全部顯示</button>
     </div>
   </header>
 
   <div class="workspace">
-    <!-- Left Panel: Route Planner + 6-Day Itinerary -->
+    <!-- Left: Full Searchable Piste & Lift Directory -->
     <aside class="panel-left">
-      <div class="section-title">🧭 A ➔ B 智能路線規劃器</div>
-      <div class="planner-box">
-        <div class="form-row">
-          <label>起點 A (Start Node)</label>
-          <select id="select-from"></select>
-        </div>
-        <div class="form-row">
-          <label>終點 B (Destination Node)</label>
-          <select id="select-to"></select>
-        </div>
-        <div class="form-row">
-          <label>規劃偏好 Switch (Routing Mode)</label>
-          <div class="mode-switch">
-            <button class="mode-btn" data-mode="fast" id="mode-fast">⚡ 最快到達</button>
-            <button class="mode-btn active" data-mode="board" id="mode-board">🏂 Snowboard 舒適</button>
-          </div>
-        </div>
-        <button class="btn-route" id="btn-calc-route">計算並高亮最佳路線</button>
+      <div class="section-title">
+        <span>🎿 全場雪道與纜車目錄</span>
+        <button class="mini-btn" id="btn-refresh-osm" title="重新由 OpenStreetMap 同步">🔄 刷新數據</button>
       </div>
-
-      <div class="section-title" style="margin-top:4px;">📅 1月18–23日 每日行程 (點擊高亮)</div>
-      <div id="itinerary-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="搜尋雪道或纜車名稱 (例: Caron, Moraine, Dalles)..." />
+        <div class="dir-tabs">
+          <button class="tab-btn active" data-tab="all">全部</button>
+          <button class="tab-btn" data-tab="piste">🏂 雪道 (Pistes)</button>
+          <button class="tab-btn" data-tab="lift">⚡ 纜車 (Lifts)</button>
+        </div>
+      </div>
+      <div id="directory-list">
+        <!-- Populated dynamically from OpenStreetMap Overpass API -->
+      </div>
     </aside>
 
-    <!-- Center: Google Satellite / Terrain Leaflet Map -->
+    <!-- Center: Interactive Google Satellite Map -->
     <main class="map-wrapper">
       <div class="map-overlay-bar">
         <button class="chip-btn active" id="btn-tile-hybrid">🛰️ Google 衛星+地名</button>
         <button class="chip-btn" id="btn-tile-terrain">⛰️ Google 等高線地形</button>
         <button class="chip-btn active" id="btn-toggle-opensnow">❄️ 官方 OpenSnowMap 圖層</button>
-        <button class="chip-btn active" id="btn-toggle-cams">📹 顯示 Live Cams</button>
-        <button class="chip-btn" id="btn-clear-highlight">🔄 清除路線高亮</button>
+        <button class="chip-btn active" id="btn-toggle-cams">📹 Live Cams</button>
+        <button class="chip-btn" id="btn-show-all-map">🔄 取消高亮 (顯示全場)</button>
       </div>
       <div id="map"></div>
+      <div class="status-banner" id="map-status">
+        💡 提示：直接點擊地圖上任何雪道/纜車（或左邊清單嘅 <strong>+ 加入</strong>）即可將佢加落右邊嘅自訂路線組合！
+      </div>
     </main>
 
-    <!-- Right Panel: Route Results & Selected Node/Lift/Piste Info -->
+    <!-- Right: Custom Combination Builder & Saved Combos CRUD -->
     <aside class="panel-right">
-      <div class="section-title">📍 導航結果 / 節點與雪道詳情</div>
-      <div id="inspector-panel" class="info-box">
-        <div class="info-title">🏠 已鎖定你嘅酒店：Les Cimes de Caron</div>
-        <p style="font-size:12px; color:var(--text-muted); line-height:1.5;">
-          地址：470 Grande Rue, 73440 Val Thorens<br>
-          點擊地圖上嘅 <strong>📹 紫色鏡頭圖標</strong> 可即時睇山頂 Live Cam 雪況；或用左邊 A➔B 規劃器計出由酒店出發去任何山頂嘅最佳路線。
-        </p>
+      <div class="section-title">🛠️ 自訂路線組合產生器 (Route Builder)</div>
+      <div class="builder-card">
+        <div class="row-2col">
+          <input type="text" id="combo-name" placeholder="組合名稱 (例: Day 1 朝早熱身)" />
+          <select id="combo-day">
+            <option value="18 Jan (Day 1)">18 Jan (Day 1)</option>
+            <option value="19 Jan (Day 2)">19 Jan (Day 2)</option>
+            <option value="20 Jan (Day 3)">20 Jan (Day 3)</option>
+            <option value="21 Jan (Day 4)">21 Jan (Day 4)</option>
+            <option value="22 Jan (Day 5)">22 Jan (Day 5)</option>
+            <option value="23 Jan (Day 6)">23 Jan (Day 6)</option>
+            <option value="未分類 / 備用">未分類 / 備用</option>
+          </select>
+        </div>
+        <input type="text" id="combo-note" placeholder="備註 (例: 15:50前要搭 Rosaël 返頭 / 拍 Insta360)..." />
+
+        <div style="font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between;">
+          <span>已選步驟順序 (點擊地圖或左側 `+` 加入)：</span>
+          <span id="builder-count">0 步</span>
+        </div>
+
+        <div class="active-steps-list" id="builder-steps">
+          <div style="font-size:11.5px; color:var(--text-muted); text-align:center; padding-top:14px;">
+            尚未加入任何纜車或雪道
+          </div>
+        </div>
+
+        <div class="row-2col">
+          <button class="btn-primary" id="btn-save-combo">💾 儲存此組合</button>
+          <button class="btn-secondary" id="btn-clear-builder">🧹 清空編輯器</button>
+        </div>
       </div>
 
-      <div class="section-title" style="margin-top:4px;">🏂 當日行程 / 導航步驟明細</div>
-      <div id="day-detail-panel" class="info-box">
-        <div class="info-title" style="font-size:13px;">等待選擇行程或 A➔B 導航</div>
-        <p style="font-size:12px; color:var(--text-muted);">支援「Snowboard 舒適模式」：自動過濾高於目前難度上限嘅雪道、避開長平路 Cat-tracks，並優先選擇可除板坐入車廂嘅 Gondola / Funitel。</p>
+      <div class="section-title" style="margin-top:6px;">
+        <span>📂 已儲存嘅路線組合 (Saved Combos)</span>
+        <div style="display:flex; gap:4px;">
+          <button class="mini-btn" id="btn-export-json" title="匯出備份 JSON">⬇️ 匯出</button>
+          <button class="mini-btn" id="btn-import-json" title="匯入 JSON">⬆️ 匯入</button>
+          <input type="file" id="file-import" accept=".json" style="display:none;" />
+        </div>
+      </div>
+
+      <div id="saved-combos-list">
+        <!-- Populated from localStorage -->
       </div>
     </aside>
   </div>
@@ -355,13 +447,13 @@
     <div class="modal-content">
       <div class="modal-header">
         <strong id="cam-title" style="font-size:14px;">📹 Live Cam</strong>
-        <button class="chip-btn" id="btn-close-cam">✕ 關閉視窗</button>
+        <button class="chip-btn" id="btn-close-cam">✕ 關閉</button>
       </div>
       <div class="modal-body">
         <iframe id="cam-iframe" class="cam-frame" src="" allowfullscreen loading="lazy"></iframe>
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:11.5px; color:var(--text-muted);">如因瀏覽器安全政策無法內嵌顯示，請點擊右側按鈕直接開啟官方 360° 全景高清台：</span>
-          <a id="cam-ext-link" href="#" target="_blank" rel="noopener" class="ext-link">🔗 在新分頁打開官方 Live Cam</a>
+          <span style="font-size:11.5px; color:var(--text-muted);">如瀏覽器封鎖內嵌畫面，請點擊右方按鈕直達官方 360° 全景高清台：</span>
+          <a id="cam-ext-link" href="#" target="_blank" rel="noopener" class="ext-link">🔗 開啟官方 Live Cam</a>
         </div>
       </div>
     </div>
@@ -369,567 +461,559 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ================= [STAGE 2: 貼上 VT_DATA 真實 GPS 座標與 Live Cams 數據庫] =================
-const VT_DATA = {
-  // 1. 真實 GPS 節點 (含酒店起點與 14 個核心纜車站)
-  stations: [
-    { id: "hotel_caron", name: "🏠 酒店: Les Cimes de Caron (470 Grande Rue)", alt: "2310m", lat: 45.2995, lng: 6.5786, hub: true, isHotel: true },
-    { id: "vt_village", name: "Val Thorens Place Caron / Village", alt: "2300m", lat: 45.2974, lng: 6.5802, hub: true },
-    { id: "vt_rond_point", name: "Rond Point des Pistes", alt: "2360m", lat: 45.2982, lng: 6.5868, hub: true },
-    { id: "cairn_mid", name: "Cairn / Caron Gondola Base", alt: "2325m", lat: 45.2942, lng: 6.5748, hub: false },
-    { id: "plan_de_leau", name: "Plan de l'Eau (最低點)", alt: "1800m", lat: 45.2862, lng: 6.5592, hub: true },
-    { id: "cime_caron", name: "Cime Caron (全景頂峰)", alt: "3200m", lat: 45.2655, lng: 6.5608, hub: true },
-    { id: "boismint_top", name: "Sommet Boismint", alt: "2735m", lat: 45.2762, lng: 6.5795, hub: false },
-    { id: "plein_sud_top", name: "Sommet Pionniers / Plein Sud", alt: "2650m", lat: 45.3046, lng: 6.5822, hub: false },
-    { id: "col_chambre", name: "Col de la Chambre (3 Vallées 交匯)", alt: "2850m", lat: 45.3168, lng: 6.5742, hub: true },
-    { id: "deux_lacs_top", name: "Les 2 Lacs / Snowpark", alt: "2550m", lat: 45.2978, lng: 6.5975, hub: false },
-    { id: "moraine_top", name: "Sommet Moraine", alt: "2820m", lat: 45.3005, lng: 6.6065, hub: false },
-    { id: "peclet_glacier", name: "Glacier de Péclet", alt: "3000m", lat: 45.3055, lng: 6.6178, hub: true },
-    { id: "grand_fond", name: "Col du Grand Fond", alt: "3000m", lat: 45.2918, lng: 6.6152, hub: true },
-    { id: "plan_bouchet", name: "Plan Bouchet (Orelle 第四山谷底)", alt: "2350m", lat: 45.2785, lng: 6.6320, hub: true },
-    { id: "sommet_bouchet", name: "Pointe du Bouchet (全場最高點)", alt: "3230m", lat: 45.2845, lng: 6.6472, hub: true }
-  ],
+    // ================= [STAGE 2: 貼上 Overpass 全量數據拉取 + 組合儲存 CRUD 引擎] =================
+    (function initCustomRouteBuilder() {
+  // 1. 初始化地圖與 Google 圖層 (中心鎖定酒店 Les Cimes de Caron 與主村)
+  const map = L.map("map", { center: [45.2975, 6.5880], zoom: 14 });
 
-  // 2. 官方實時雪況 Live Cams (Skaping 360° 全景台)
-  cams: [
-    { id: "cam_caron", name: "Cime Caron 3200m Live Cam", alt: "3200m", lat: 45.2662, lng: 6.5615, url: "https://www.skaping.com/valthorens/cime-caron", fallback: "https://www.valthorens.com/en/webcams/" },
-    { id: "cam_peclet", name: "Glacier de Péclet 3000m Live Cam", alt: "3000m", lat: 45.3060, lng: 6.6170, url: "https://www.skaping.com/valthorens/peclet", fallback: "https://www.valthorens.com/en/webcams/" },
-    { id: "cam_chambre", name: "Col de la Chambre 2850m Live Cam", alt: "2850m", lat: 45.3160, lng: 6.5750, url: "https://www.skaping.com/valthorens/funitel-3-vallees", fallback: "https://www.valthorens.com/en/webcams/" },
-    { id: "cam_2lacs", name: "Les 2 Lacs / Snowpark Live Cam", alt: "2550m", lat: 45.2985, lng: 6.5970, url: "https://www.skaping.com/valthorens/2-lacs", fallback: "https://www.valthorens.com/en/webcams/" },
-    { id: "cam_boismint", name: "Sommet Boismint 2735m Live Cam", alt: "2735m", lat: 45.2768, lng: 6.5802, url: "https://www.skaping.com/valthorens/boismint", fallback: "https://www.valthorens.com/en/webcams/" },
-    { id: "cam_tyrolienne", name: "Orelle / Sommet Bouchet 3230m Cam", alt: "3230m", lat: 45.2850, lng: 6.6465, url: "https://www.skaping.com/valthorens/la-tyrolienne", fallback: "https://www.valthorens.com/en/webcams/" }
-  ],
-
-  // 3. 纜車線 (含1月開放/截龍時間、乘搭分鐘數 mins、Snowboard 廂型友善標記)
-  lifts: [
-    { id: "L_funitel_peclet", name: "Funitel de Péclet", type: "Funitel (雙纜廂型)", boardFriendly: true, from: "vt_rond_point", to: "peclet_glacier", mins: 9, open: "09:00", close: "16:15", note: "可除板企/坐入大型抗風車廂，直達 3000m 冰川。" },
-    { id: "L_funitel_grand_fond", name: "Funitel de Grand Fond", type: "Funitel (廂型)", boardFriendly: true, from: "deux_lacs_top", to: "grand_fond", mins: 6, open: "09:00", close: "16:10", note: "連接 Orelle 第四山谷主力廂型纜車，抗風能力極高。" },
-    { id: "L_funitel_3vallees", name: "Funitel 3 Vallées", type: "Funitel (廂型)", boardFriendly: true, from: "vt_rond_point", to: "col_chambre", mins: 7, open: "09:00", close: "16:20", note: "極速登上 2850m Col de la Chambre，連接 Jérusalem 神級波浪道。" },
-    { id: "L_pionniers", name: "TSD Pionniers / Plein Sud", type: "6-Chair / Gondola", boardFriendly: false, from: "vt_village", to: "plein_sud_top", mins: 6, open: "09:00", close: "16:30", note: "由酒店落 Place Caron 即可乘搭，朝早熱身最快上山線。" },
-    { id: "L_3vallees_chair", name: "TSD 3 Vallées Chair", type: "6-Chair", boardFriendly: false, from: "plein_sud_top", to: "col_chambre", mins: 5, open: "09:05", close: "16:20", note: "由 Plein Sud 頂接駁上 Col de la Chambre。" },
-    { id: "L_moraine", name: "TC Moraine", type: "10-Gondola (10人廂型)", boardFriendly: true, from: "vt_rond_point", to: "moraine_top", mins: 7, open: "09:00", close: "16:25", note: "Snowboarder 首選！全新10人座廂型纜車，避寒兼刷闊藍道 Dalles。" },
-    { id: "L_col", name: "TSD du Col", type: "6-Chair", boardFriendly: false, from: "moraine_top", to: "peclet_glacier", mins: 6, open: "09:10", close: "16:10", note: "由 Moraine 頂接駁上 Péclet 冰川。" },
-    { id: "L_deux_lacs", name: "TC Les 2 Lacs", type: "Gondola (廂型)", boardFriendly: true, from: "vt_rond_point", to: "deux_lacs_top", mins: 5, open: "09:00", close: "16:30", note: "廂型設計，直達 Snowpark 同綠/藍練習區。" },
-    { id: "L_cairn", name: "TC Cairn / Caron", type: "Gondola (廂型)", boardFriendly: true, from: "vt_village", to: "cairn_mid", mins: 4, open: "09:00", close: "16:30", note: "離你酒店 Les Cimes de Caron 極近，可除板輕鬆上 Caron 中站。" },
-    { id: "L_tph_caron", name: "TPH Cime Caron", type: "150人大型吊車", boardFriendly: true, from: "cairn_mid", to: "cime_caron", mins: 7, open: "09:10", close: "16:10", note: "直上 3200m 頂峰，免單腳滑落吊椅，建議 10:00 前乘搭避開人龍。" },
-    { id: "L_plan_leau", name: "TSD Plan de l'Eau", type: "6-Chair", boardFriendly: false, from: "plan_de_leau", to: "cairn_mid", mins: 7, open: "09:00", close: "16:25", note: "由最低點 1800m 返上主村嘅必經吊椅。" },
-    { id: "L_boismint", name: "TSD Boismint", type: "6-Chair", boardFriendly: false, from: "plan_de_leau", to: "boismint_top", mins: 7, open: "09:05", close: "16:15", note: "通往東南面人少雪靚嘅 Boismint 長距離 Carving 區。" },
-    { id: "L_rosael", name: "TC Orelle-Caron / Rosaël", type: "Gondola / 6-Chair", boardFriendly: true, from: "plan_bouchet", to: "grand_fond", mins: 8, open: "09:05", close: "15:50", note: "⚠️ 15:50 截龍！由 Orelle 返回 Val Thorens 嘅唯一跨谷纜車。" },
-    { id: "L_bouchet", name: "TSD du Bouchet", type: "Chairlift", boardFriendly: false, from: "plan_bouchet", to: "sommet_bouchet", mins: 8, open: "09:15", close: "15:45", note: "登上全三峽谷最高點 3230m。" }
-  ],
-
-  // 4. 雪道與村內滑行接駁線 (diffLevel: 1=綠, 2=藍, 3=紅, 4=黑; flatRisk: 平路黑點)
-  pistes: [
-    // 酒店與主村接駁線 (支援 A➔B 全網無死角導航)
-    { id: "P_hotel_to_village", name: "Grande Rue Ski-Out (酒店落主村)", diff: "green", diffLevel: 1, from: "hotel_caron", to: "vt_village", mins: 2, flatRisk: false, waypoints: [[45.2985, 6.5794]], note: "由 470 Grande Rue 落樓過雪道橋直滑去 Place Caron / Pionniers 纜車站。" },
-    { id: "P_hotel_to_cairn", name: "Galerie Caron 滑降線", diff: "green", diffLevel: 1, from: "hotel_caron", to: "cairn_mid", mins: 3, flatRisk: false, waypoints: [[45.2968, 6.5765]], note: "由酒店順斜坡滑落 Caron / Cairn 纜車站。" },
-    { id: "P_village_to_hotel", name: "Place Caron 返回酒店通道", diff: "green", diffLevel: 1, from: "vt_village", to: "hotel_caron", mins: 3, flatRisk: false, waypoints: [[45.2985, 6.5794]], note: "滑落 Place Caron 後步行 150 米返抵 Les Cimes de Caron。" },
-    { id: "P_village_to_rond", name: "Village ➔ Rond Point 接駁道", diff: "green", diffLevel: 1, from: "vt_village", to: "vt_rond_point", mins: 4, flatRisk: false, waypoints: [[45.2978, 6.5835]], note: "村內自動步道 (Tapis) 與平緩綠道接駁。" },
-    { id: "P_rond_to_village", name: "Rond Point ➔ Village 綠道", diff: "green", diffLevel: 1, from: "vt_rond_point", to: "vt_village", mins: 2, flatRisk: false, waypoints: [[45.2978, 6.5835]], note: "由 Rond Point 順滑落返主村及酒店區。" },
-
-    // 主雪場核心綠/藍/紅/黑道
-    { id: "P_2lacs_green", name: "Combe de Thorens (綠道)", diff: "green", diffLevel: 1, from: "deux_lacs_top", to: "vt_village", mins: 7, flatRisk: false, waypoints: [[45.2975, 6.5900]], note: "極闊熱身綠道，適合 Day 1 搵返 Edge 腳感同練 Flatland Buttering。" },
-    { id: "P_dalles", name: "Dalles / Gentiane", diff: "blue", diffLevel: 2, from: "moraine_top", to: "vt_rond_point", mins: 6, flatRisk: false, waypoints: [[45.2995, 6.5960]], note: "全場最闊、斜度最均勻嘅頂級 Carving 大藍道。" },
-    { id: "P_pluviometre", name: "Pluviomètre", diff: "blue", diffLevel: 2, from: "col_chambre", to: "hotel_caron", mins: 9, flatRisk: true, waypoints: [[45.3090, 6.5760], [45.3030, 6.5775]], note: "由 2850m 直接滑返你酒店門口 (Grande Rue)！⚠️ 尾段平緩，必須提前 Keep 速。" },
-    { id: "P_plein_sud", name: "Plein Sud", diff: "blue", diffLevel: 2, from: "plein_sud_top", to: "vt_rond_point", mins: 6, flatRisk: false, waypoints: [[45.3012, 6.5845]], note: "向陽大道，朝早10點雪質微軟極好咬邊，下晝4點後多雪包。" },
-    { id: "P_tete_ronde", name: "Tête Ronde (冰川藍道)", diff: "blue", diffLevel: 2, from: "peclet_glacier", to: "deux_lacs_top", mins: 7, flatRisk: false, waypoints: [[45.3025, 6.6080]], note: "3000m 高海拔乾爽粉雪藍道，高速巡航首選。" },
-    { id: "P_col_red", name: "Col (冰川紅道)", diff: "red", diffLevel: 3, from: "peclet_glacier", to: "moraine_top", mins: 5, flatRisk: false, waypoints: [[45.3032, 6.6125]], note: "冰川直落紅道，視野極開揚，適合 Insta360 拍攝。" },
-    { id: "P_falaise_blue", name: "Falaise / Fond (藍道)", diff: "blue", diffLevel: 2, from: "grand_fond", to: "deux_lacs_top", mins: 7, flatRisk: false, waypoints: [[45.2945, 6.6055]], note: "由 Grand Fond 落 Les 2 Lacs 嘅穩定藍道。" },
-    { id: "P_christine", name: "Christine", diff: "red", diffLevel: 3, from: "grand_fond", to: "vt_rond_point", mins: 8, flatRisk: false, waypoints: [[45.2950, 6.6010]], note: "坡度紮實嘅高海拔紅道，中段極闊，練換刃節奏一流。" },
-    { id: "P_lac_blanc", name: "Lac Blanc", diff: "red", diffLevel: 3, from: "col_chambre", to: "plein_sud_top", mins: 5, flatRisk: false, waypoints: [[45.3110, 6.5785]], note: "2850m 衝落嚟嘅爽快紅道，早場麵條雪完美。" },
-    { id: "P_jerusalem", name: "Jérusalem (神級波浪藍道)", diff: "blue", diffLevel: 2, from: "col_chambre", to: "cairn_mid", mins: 10, flatRisk: false, waypoints: [[45.3080, 6.5680], [45.2990, 6.5710]], note: "🔥 必滑！連續天然 Rollers 波浪地形，玩 Ollie 同 Buttering 爽度滿分。" },
-    { id: "P_audzin", name: "Col de l'Audzin", diff: "red", diffLevel: 3, from: "cime_caron", to: "cairn_mid", mins: 9, flatRisk: true, waypoints: [[45.2790, 6.5650], [45.2880, 6.5710]], note: "3200m 長距離紅道；⚠️ 尾段接駁有長平路 Cat-track，必須直板全速衝過！" },
-    { id: "P_combe_caron", name: "Combe de Caron (傳奇黑道)", diff: "black", diffLevel: 4, from: "cime_caron", to: "plan_de_leau", mins: 10, flatRisk: true, waypoints: [[45.2740, 6.5560], [45.2810, 6.5575]], note: "天然大碗黑道，Powder 與 Steep Carving 聖地；最底接駁平路需 Keep 速。" },
-    { id: "P_goitschel", name: "Goitschel (黑道)", diff: "black", diffLevel: 4, from: "grand_fond", to: "vt_rond_point", mins: 7, flatRisk: false, waypoints: [[45.2935, 6.5990]], note: "陡峭黑道，考驗陡坡 Short Turns 同 Edge Control。" },
-    { id: "P_boismint_blue", name: "Boismint / Plan de l'Eau (藍/紅)", diff: "blue", diffLevel: 2, from: "boismint_top", to: "plan_de_leau", mins: 9, flatRisk: false, waypoints: [[45.2815, 6.5690]], note: "超過 900m 落差嘅連續長道，下晝人少雪靚。" },
-    { id: "P_boismint_red", name: "Haute Combe Boismint (紅道)", diff: "red", diffLevel: 3, from: "boismint_top", to: "plan_de_leau", mins: 7, flatRisk: false, waypoints: [[45.2800, 6.5720]], note: "高速 Carving 長紅道，雪質保存極佳。" },
-    { id: "P_cumin", name: "Boulevard Cumin", diff: "blue", diffLevel: 2, from: "cairn_mid", to: "plan_de_leau", mins: 6, flatRisk: false, waypoints: [[45.2902, 6.5665]], note: "連接主村去 1800m 底部嘅開揚巡航藍道。" },
-    { id: "P_mauriennaise", name: "Mauriennaise", diff: "red", diffLevel: 3, from: "grand_fond", to: "plan_bouchet", mins: 8, flatRisk: false, waypoints: [[45.2855, 6.6235]], note: "滑向 Orelle 陽光山谷嘅超長紅道，注意 15:50 尾班車返頭！" },
-    { id: "P_lory", name: "Lory (Orelle 藍道)", diff: "blue", diffLevel: 2, from: "grand_fond", to: "plan_bouchet", mins: 9, flatRisk: true, waypoints: [[45.2835, 6.6210]], note: "Orelle 區寬敞藍道；⚠️ 尾段較平緩，Snowboard 切忌減速。" },
-    { id: "P_coraia", name: "Coraïa (3230m 頂峰紅道)", diff: "red", diffLevel: 3, from: "sommet_bouchet", to: "plan_bouchet", mins: 7, flatRisk: false, waypoints: [[45.2815, 6.6395]], note: "由全場最高點 3230m 滑落嘅高海拔紅道，雪質頂級。" }
-  ],
-
-  // 5. 1月18–23日 每日專屬 Snowboard 行程 (以酒店 Les Cimes de Caron 為出發及回程點)
-  days: [
-    {
-      day: 1,
-      date: "18 Jan 2027 (Mon)",
-      title: "Day 1：酒店 Ski-Out 適應 + 闊藍道 Edge Control",
-      focus: "Les 2 Lacs / Moraine 大藍道熱身 & Flatland Buttering",
-      lifts: ["L_pionniers", "L_deux_lacs", "L_moraine"],
-      pistes: ["P_hotel_to_village", "P_plein_sud", "P_2lacs_green", "P_dalles", "P_rond_to_village"],
-      boardTip: "由 470 Grande Rue 落樓直滑去 Pionniers 上山；喺 Dalles 藍道用 +15/-15 duck stance 練返前後刃轉換同 Nose/Tail Press。",
-      schedule: [
-        "09:00 - 10:30：由 Les Cimes de Caron 滑落 Place Caron，搭 TC Les 2 Lacs 滑綠道熱身。",
-        "10:30 - 12:30：轉戰 TC Moraine (10人廂型免除單腳疲勞)，狂刷 Dalles 闊藍道練大S Carving。",
-        "12:30 - 13:45：Rond Point des Pistes 午餐休息。",
-        "13:45 - 16:00：搭 Pionniers 滑 Plein Sud，再去 Snowpark 外圍練 Buttering，最後滑返 Grande Rue 酒店。"
-      ]
-    },
-    {
-      day: 2,
-      date: "19 Jan 2027 (Tue)",
-      title: "Day 2：3000m Péclet 冰川極速 Carving",
-      focus: "Glacier de Péclet + Grand Fond 高海拔粉雪咬邊",
-      lifts: ["L_funitel_peclet", "L_moraine", "L_col", "L_funitel_grand_fond"],
-      pistes: ["P_hotel_to_village", "P_tete_ronde", "P_col_red", "P_christine", "P_dalles"],
-      boardTip: "出門前先撳地圖上嘅『Péclet 3000m Live Cam』睇能見度！1月冰川雪質極乾極 Grippy，最適合用 Insta360 X5 拍貼地 Carving。",
-      schedule: [
-        "09:00 - 11:00：頭班車上 Funitel de Péclet (3000m)，搶先滑無人 Tête Ronde 藍道同 Col 紅道。",
-        "11:00 - 12:30：用 TSD du Col 重複刷冰川上半段，測試高速 Edge Hold。",
-        "13:30 - 15:45：搭 Funitel de Grand Fond (3000m)，滑 Christine 紅道落返 Rond Point。"
-      ]
-    },
-    {
-      day: 3,
-      date: "20 Jan 2027 (Wed)",
-      title: "Day 3：Col de la Chambre + 神級波浪道 Jérusalem",
-      focus: "北面山脊巡航 + 天然 Rollers 波浪地形 Freestyle",
-      lifts: ["L_pionniers", "L_3vallees_chair", "L_funitel_3vallees"],
-      pistes: ["P_hotel_to_village", "P_lac_blanc", "P_jerusalem", "P_pluviometre"],
-      boardTip: "Jérusalem 擁有全場最正嘅天然 Rollers 地形；下晝最後一轉由 Col de la Chambre 滑 Pluviomètre 藍道可以直接滑返你酒店門口 (470 Grande Rue)！",
-      schedule: [
-        "09:00 - 11:30：由酒店落 Pionniers 駁上 Col de la Chambre (2850m)，先刷 Lac Blanc 紅道。",
-        "11:30 - 13:00：滑入 Jérusalem 藍道，享受連續波浪地形玩 Ollie 同 Side-hits。",
-        "14:00 - 16:15：再上 Col de la Chambre，沿 Pluviomètre 藍道一路直滑返 Les Cimes de Caron 酒店門口。"
-      ]
-    },
-    {
-      day: 4,
-      date: "21 Jan 2027 (Thu)",
-      title: "Day 4：遠征 Orelle 第四山谷 + 3230m 最高峰",
-      focus: "跨山谷向陽長紅道 + 征服全場最高點",
-      lifts: ["L_deux_lacs", "L_funitel_grand_fond", "L_bouchet", "L_rosael"],
-      pistes: ["P_mauriennaise", "P_coraia", "P_lory", "P_falaise_blue"],
-      boardTip: "⚠️ 鐵律：Orelle 返 Val Thorens 嘅 Rosaël 纜車 15:50 截龍！15:00 前必須排隊回程；滑 Lory 藍道尾段較平，切勿隨便煞車。",
-      schedule: [
-        "09:00 - 10:00：由 Les 2 Lacs 駁 Funitel Grand Fond 翻過山脊進入 Orelle 區。",
-        "10:00 - 12:30：搭 Bouchet 衝上全場最高點 3230m，滑 Coraïa 同 Mauriennaise 紅道。",
-        "12:30 - 13:45：喺 Plan Bouchet (2350m) 陽光露台午餐。",
-        "13:45 - 15:15：15:15 準時搭 Rosaël 返過 Grand Fond，滑返主村。"
-      ]
-    },
-    {
-      day: 5,
-      date: "22 Jan 2027 (Fri)",
-      title: "Day 5：Cime Caron 3200m 攻頂 + Boismint 秘境",
-      focus: "1400m 超長垂直落差 + 傳奇黑道陡坡控制",
-      lifts: ["L_cairn", "L_tph_caron", "L_boismint", "L_plan_leau"],
-      pistes: ["P_hotel_to_cairn", "P_audzin", "P_combe_caron", "P_boismint_red", "P_cumin"],
-      boardTip: "你間酒店行去 Cairn/Caron 站只需 3 分鐘！朝早先睇『Cime Caron Live Cam』確認無雲海遮擋即刻衝頭班大吊車。",
-      schedule: [
-        "09:00 - 09:45：由酒店直滑落 Cairn 駁 TPH Cime Caron 大吊車上 3200m 影勃朗峰全景。",
-        "09:45 - 12:30：先滑紅道 Col de l'Audzin，第二轉挑戰傳奇黑道 Combe de Caron 直落 1800m（尾段平路全速衝）。",
-        "13:30 - 16:00：下晝留喺 Plan de l'Eau 搭 TSD Boismint，獨享人少雪靚嘅 Boismint 長紅/藍道。"
-      ]
-    },
-    {
-      day: 6,
-      date: "23 Jan 2027 (Sat)",
-      title: "Day 6：星期六無人麵條雪 + 360 航拍收官日",
-      focus: "自選最愛 Carving / Buttering 雪道 + 完美收爐",
-      lifts: ["L_moraine", "L_funitel_3vallees", "L_deux_lacs"],
-      pistes: ["P_dalles", "P_jerusalem", "P_2lacs_green", "P_pluviometre"],
-      boardTip: "星期六係歐洲雪客 Check-in/out 交接日，全場最少人！專注朝早黃金壓雪時段拍片，下晝經 Pluviomètre 滑返酒店執行李。",
-      schedule: [
-        "09:00 - 11:00：直衝 Moraine 同 Col de la Chambre 狂刷無人 Corduroy（麵條雪）。",
-        "11:00 - 13:00：重溫 Jérusalem 波浪道拍最後一輪 360 鏡頭。",
-        "14:00 - 15:45：Les 2 Lacs 輕鬆玩 Flatland Tricks，最後由 Pluviomètre 滑返 470 Grande Rue 收爐。"
-      ]
-    }
-  ]
-};
-    // ================= [STAGE 3: 貼上 VT_ENGINE Leaflet 渲染與 Dijkstra 導航引擎] =================
-    (function initVTNavigator() {
-  // 1. 初始化 Leaflet 真實經緯度地圖 (中心鎖定 Val Thorens 2300m)
-  const map = L.map("map", {
-    center: [45.2974, 6.5880],
-    zoom: 14,
-    zoomControl: true
-  });
-
-  // Google Hybrid 衛星連地名圖磚 & Google Terrain 等高線地形圖磚
   const googleHybrid = L.tileLayer("https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", {
-    maxZoom: 20,
-    attribution: "© Google Satellite"
+    maxZoom: 20, attribution: "© Google Satellite"
   }).addTo(map);
 
   const googleTerrain = L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
-    maxZoom: 20,
-    attribution: "© Google Terrain"
+    maxZoom: 20, attribution: "© Google Terrain"
   });
 
-  // OpenSnowMap 官方真實 GIS 滑雪道疊加圖層
   const openSnowLayer = L.tileLayer("https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png", {
-    maxZoom: 18,
-    opacity: 0.65,
-    attribution: "© OpenSnowMap.org"
+    maxZoom: 18, opacity: 0.6, attribution: "© OpenSnowMap.org"
   }).addTo(map);
 
-  // 圖層群組與索引
   const pisteLayerGroup = L.layerGroup().addTo(map);
   const liftLayerGroup = L.layerGroup().addTo(map);
-  const stationLayerGroup = L.layerGroup().addTo(map);
   const camLayerGroup = L.layerGroup().addTo(map);
 
-  const stationMap = {};
-  const polylineMap = {}; // id -> Leaflet Polyline
-  let currentMaxDiff = 4; // 1=綠, 2=藍或以下, 3=紅或以下, 4=全部
-  let routingMode = "board"; // "fast" | "board"
-
-  const diffColors = {
-    green: "#22c55e",
-    blue: "#3b82f6",
-    red: "#ef4444",
-    black: "#18181b"
-  };
-  const diffNames = {
-    green: "🟢 綠道 (Easy)",
-    blue: "🔵 藍道 (Cruiser)",
-    red: "🔴 紅道 (Intermediate)",
-    black: "⚫ 黑道 (Expert)"
-  };
-
-  VT_DATA.stations.forEach(s => { stationMap[s.id] = s; });
-
-  // 補入村內雙向步行/滑行微接駁，確保 A➔B 100% 連通無死角
-  VT_DATA.pistes.push(
-    { id: "P_cairn_to_village", name: "Cairn ➔ Place Caron 村內滑道", diff: "green", diffLevel: 1, from: "cairn_mid", to: "vt_village", mins: 3, flatRisk: false, waypoints: [], note: "由 Cairn 順滑返主村及酒店區。" },
-    { id: "P_2lacs_to_rond", name: "Les 2 Lacs ➔ Rond Point 藍道", diff: "blue", diffLevel: 2, from: "deux_lacs_top", to: "vt_rond_point", mins: 4, flatRisk: false, waypoints: [], note: "由 Les 2 Lacs 順滑落 Rond Point 樞紐。" }
-  );
-
-  const inspector = document.getElementById("inspector-panel");
-  const dayDetail = document.getElementById("day-detail-panel");
-
-  // 2. 繪製雪道 (真實 GPS 折線)
-  function renderPistes() {
-    VT_DATA.pistes.forEach(p => {
-      const sFrom = stationMap[p.from];
-      const sTo = stationMap[p.to];
-      if (!sFrom || !sTo) return;
-
-      const latlngs = [
-        [sFrom.lat, sFrom.lng],
-        ...(p.waypoints || []),
-        [sTo.lat, sTo.lng]
-      ];
-
-      const poly = L.polyline(latlngs, {
-        color: p.diff === "black" ? "#f4f4f5" : diffColors[p.diff],
-        weight: 4,
-        opacity: 0.9,
-        dashArray: p.diff === "black" ? "6, 6" : null
-      }).addTo(pisteLayerGroup);
-
-      poly.bindTooltip(`🏂 ${p.name} [${p.diff.toUpperCase()}] (${p.mins}m)`, { sticky: true });
-      poly.on("click", () => showPisteInfo(p, sFrom, sTo));
-
-      polylineMap[p.id] = { poly, data: p, type: "piste" };
-    });
-  }
-
-  // 3. 繪製纜車線
-  function renderLifts() {
-    VT_DATA.lifts.forEach(l => {
-      const sFrom = stationMap[l.from];
-      const sTo = stationMap[l.to];
-      if (!sFrom || !sTo) return;
-
-      const poly = L.polyline([[sFrom.lat, sFrom.lng], [sTo.lat, sTo.lng]], {
-        color: "#f59e0b",
-        weight: 3,
-        opacity: 0.85,
-        dashArray: "5, 7"
-      }).addTo(liftLayerGroup);
-
-      poly.bindTooltip(`⚡ ${l.name} (${l.open}-${l.close}截龍)`, { sticky: true });
-      poly.on("click", () => showLiftInfo(l, sFrom, sTo));
-
-      polylineMap[l.id] = { poly, data: l, type: "lift" };
-    });
-  }
-
-  // 4. 繪製纜車站與酒店地標
-  function renderStations() {
-    VT_DATA.stations.forEach(s => {
-      const bg = s.isHotel ? "#ef4444" : (s.hub ? "#38bdf8" : "#1e293b");
-      const border = s.isHotel ? "#ffffff" : "#38bdf8";
-      const size = s.isHotel ? 16 : (s.hub ? 12 : 9);
-
-      const icon = L.divIcon({
-        className: "custom-station-icon",
-        html: `<div style="
-          width:${size}px; height:${size}px;
-          background:${bg};
-          border:2px solid ${border};
-          border-radius:50%;
-          box-shadow:0 0 8px rgba(0,0,0,0.9);
-        "></div>`,
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2]
-      });
-
-      const marker = L.marker([s.lat, s.lng], { icon }).addTo(stationLayerGroup);
-      marker.bindTooltip(`${s.name} (${s.alt})`, { direction: "top", offset: [0, -6] });
-      marker.on("click", () => showStationInfo(s));
-    });
-  }
-
-  // 5. 繪製 Live Cam 實時鏡頭標記
-  function renderCams() {
-    VT_DATA.cams.forEach(c => {
-      const icon = L.divIcon({
-        className: "cam-icon",
-        html: `<div style="
-          background:#9333ea; color:#fff; font-size:11px; font-weight:700;
-          padding:2px 6px; border-radius:12px; border:1.5px solid #fff;
-          white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,0.7);
-        ">📹 Cam</div>`,
-        iconSize: [52, 22],
-        iconAnchor: [26, 11]
-      });
-
-      const marker = L.marker([c.lat, c.lng], { icon }).addTo(camLayerGroup);
-      marker.bindTooltip(`點擊查看實時雪況：${c.name}`, { direction: "top" });
-      marker.on("click", () => openCamModal(c));
-    });
-  }
-
-  // 6. 累積難度 Filter (Lv1 綠 ➔ Lv2 藍或以下 ➔ Lv3 紅或以下 ➔ Lv4 全部)
-  function applyCumulativeDifficulty(maxLevel) {
-    currentMaxDiff = maxLevel;
-    Object.values(polylineMap).forEach(item => {
-      if (item.type === "piste") {
-        const p = item.data;
-        if (p.diffLevel <= maxLevel) {
-          item.poly.setStyle({
-            opacity: 0.95,
-            weight: 5,
-            color: p.diff === "black" ? "#f4f4f5" : diffColors[p.diff]
-          });
-          item.poly.bringToFront();
-        } else {
-          item.poly.setStyle({ opacity: 0.12, weight: 2 });
-        }
-      } else {
-        item.poly.setStyle({ opacity: 0.75, weight: 3, color: "#f59e0b" });
-      }
-    });
-  }
-
-  document.querySelectorAll(".lvl-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".lvl-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      const lvl = parseInt(btn.getAttribute("data-level"), 10);
-      applyCumulativeDifficulty(lvl);
-    });
+  // 2. 釘上你嘅酒店: Les Cimes de Caron (470 Grande Rue) 與官方 Live Cams
+  const hotelIcon = L.divIcon({
+    className: "hotel-pin",
+    html: `<div style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;border:2px solid #fff;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.8);">🏠 470 Grande Rue (酒店)</div>`,
+    iconSize: [140, 24], iconAnchor: [70, 12]
   });
+  L.marker([45.2995, 6.5786], { icon: hotelIcon }).addTo(map)
+    .bindTooltip("Résidence Les Cimes de Caron (海拔 2310m)", { direction: "top" });
 
-  // 7. Dijkstra A ➔ B 最佳路線導航演算法
-  function computeBestRoute(startId, endId) {
-    if (startId === endId) return null;
+  const LIVE_CAMS = [
+    { name: "Cime Caron 3200m Cam", alt: "3200m", lat: 45.2658, lng: 6.5610, url: "https://www.skaping.com/valthorens/cime-caron" },
+    { name: "Glacier de Péclet 3000m Cam", alt: "3000m", lat: 45.3058, lng: 6.6175, url: "https://www.skaping.com/valthorens/peclet" },
+    { name: "Col de la Chambre 2850m Cam", alt: "2850m", lat: 45.3165, lng: 6.5745, url: "https://www.skaping.com/valthorens/funitel-3-vallees" },
+    { name: "Les 2 Lacs 2550m Cam", alt: "2550m", lat: 45.2982, lng: 6.5972, url: "https://www.skaping.com/valthorens/2-lacs" },
+    { name: "Sommet Boismint 2735m Cam", alt: "2735m", lat: 45.2765, lng: 6.5798, url: "https://www.skaping.com/valthorens/boismint" },
+    { name: "Orelle / Bouchet 3230m Cam", alt: "3230m", lat: 45.2848, lng: 6.6468, url: "https://www.skaping.com/valthorens/la-tyrolienne" }
+  ];
 
-    const dist = {};
-    const prev = {};
-    const unvisited = new Set();
-
-    VT_DATA.stations.forEach(s => {
-      dist[s.id] = Infinity;
-      unvisited.add(s.id);
+  LIVE_CAMS.forEach(c => {
+    const icon = L.divIcon({
+      className: "cam-pin",
+      html: `<div style="background:#9333ea;color:#fff;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:10px;border:1.5px solid #fff;white-space:nowrap;">📹 Cam</div>`,
+      iconSize: [50, 20], iconAnchor: [25, 10]
     });
-    dist[startId] = 0;
-
-    // 建立有向邊列表
-    const edges = [];
-    VT_DATA.lifts.forEach(l => {
-      let cost = l.mins;
-      if (routingMode === "board" && !l.boardFriendly) cost += 4; // 吊椅加權，優先揀廂型 Gondola/Funitel
-      edges.push({ from: l.from, to: l.to, cost, item: l, kind: "lift" });
-    });
-
-    VT_DATA.pistes.forEach(p => {
-      let cost = p.mins;
-      if (routingMode === "board") {
-        if (p.diffLevel > currentMaxDiff) cost += 500; // 避開超出目前難度 Filter 上限嘅雪道
-        if (p.diff === "black") cost += 25;
-        if (p.flatRisk) cost += 12; // 避開平路 Cat-track
-      }
-      edges.push({ from: p.from, to: p.to, cost, item: p, kind: "piste" });
-    });
-
-    while (unvisited.size > 0) {
-      let u = null;
-      unvisited.forEach(node => {
-        if (u === null || dist[node] < dist[u]) u = node;
+    L.marker([c.lat, c.lng], { icon }).addTo(camLayerGroup)
+      .bindTooltip(`${c.name} (${c.alt})`, { direction: "top" })
+      .on("click", () => {
+        document.getElementById("cam-title").textContent = `📹 ${c.name}`;
+        document.getElementById("cam-iframe").src = c.url;
+        document.getElementById("cam-ext-link").href = c.url;
+        document.getElementById("cam-modal").classList.add("open");
       });
-      if (u === null || dist[u] === Infinity || u === endId) break;
-      unvisited.delete(u);
-
-      edges.filter(e => e.from === u).forEach(edge => {
-        if (!unvisited.has(edge.to)) return;
-        const alt = dist[u] + edge.cost;
-        if (alt < dist[edge.to]) {
-          dist[edge.to] = alt;
-          prev[edge.to] = { node: u, edge };
-        }
-      });
-    }
-
-    if (!prev[endId]) return null;
-    const steps = [];
-    let curr = endId;
-    while (curr !== startId && prev[curr]) {
-      steps.unshift(prev[curr].edge);
-      curr = prev[curr].node;
-    }
-    return steps;
-  }
-
-  // 執行路線規劃並喺地圖高亮顯示
-  function handleCalculateRoute() {
-    const fromId = document.getElementById("select-from").value;
-    const toId = document.getElementById("select-to").value;
-    const steps = computeBestRoute(fromId, toId);
-
-    if (!steps || steps.length === 0) {
-      dayDetail.innerHTML = `<div class="info-title" style="color:#ef4444">⚠️ 無法連接或起終點相同</div>`;
-      return;
-    }
-
-    const activeIds = new Set(steps.map(s => s.item.id));
-    highlightIdsOnMap(activeIds);
-
-    let totalMins = 0;
-    const htmlSteps = steps.map((s, idx) => {
-      totalMins += s.item.mins;
-      const toNode = stationMap[s.to];
-      if (s.kind === "lift") {
-        return `<li><strong>Step ${idx + 1} [⚡ 搭纜車]</strong>：${s.item.name} ➔ ${toNode.name} (${s.item.mins}分鐘 | 尾班 ${s.item.close})</li>`;
-      } else {
-        const warn = s.item.flatRisk ? ` <span style="color:#fca5a5;">[⚠️尾段平路Keep速]</span>` : "";
-        return `<li><strong>Step ${idx + 1} [🏂 滑雪道]</strong>：<span style="color:${diffColors[s.item.diff]}">[${s.item.diff.toUpperCase()}]</span> ${s.item.name} ➔ ${toNode.name} (${s.item.mins}分鐘)${warn}</li>`;
-      }
-    }).join("");
-
-    dayDetail.innerHTML = `
-      <div class="info-title" style="color:var(--highlight)">🧭 最佳導航：${stationMap[fromId].name} ➔ ${stationMap[toId].name}</div>
-      <div class="meta-row"><span>預計總滑行/乘搭時間</span><strong>約 ${totalMins} 分鐘 (${steps.length} 段)</strong></div>
-      <div class="meta-row"><span>導航模式</span><strong>${routingMode === "board" ? "🏂 Snowboard 舒適優先" : "⚡ 最快時間優先"}</strong></div>
-      <ul class="step-list">${htmlSteps}</ul>
-    `;
-  }
-
-  // 8. 高亮指定路線集合
-  function highlightIdsOnMap(activeSet) {
-    const bounds = [];
-    Object.entries(polylineMap).forEach(([id, obj]) => {
-      if (activeSet.has(id)) {
-        obj.poly.setStyle({
-          opacity: 1,
-          weight: 7,
-          color: obj.type === "lift" ? "#fbbf24" : (obj.data.diff === "black" ? "#ffffff" : diffColors[obj.data.diff])
-        });
-        obj.poly.bringToFront();
-        bounds.push(...obj.poly.getLatLngs());
-      } else {
-        obj.poly.setStyle({ opacity: 0.12, weight: 2 });
-      }
-    });
-    if (bounds.length > 0) map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
-  }
-
-  // 9. 資訊欄與 Live Cam 視窗渲染
-  function showPisteInfo(p, sFrom, sTo) {
-    inspector.innerHTML = `
-      <div class="info-title" style="color:${diffColors[p.diff]}">🏂 ${p.name}</div>
-      <div class="meta-row"><span>難度</span><strong>${diffNames[p.diff]}</strong></div>
-      <div class="meta-row"><span>區間</span><span>${sFrom.name} ➔ ${sTo.name}</span></div>
-      <div class="meta-row"><span>預計滑行時間</span><strong>${p.mins} 分鐘</strong></div>
-      ${p.flatRisk ? `<div class="tag-warn">⚠️ 平路預警：尾段有平緩 Cat-track，Snowboard 切勿減速！</div>` : ""}
-      <p style="font-size:12px; margin-top:8px; line-height:1.5;">${p.note}</p>
-    `;
-  }
-
-  function showLiftInfo(l, sFrom, sTo) {
-    inspector.innerHTML = `
-      <div class="info-title" style="color:#f59e0b">⚡ ${l.name}</div>
-      <div class="meta-row"><span>類型</span><strong>${l.type} ${l.boardFriendly ? "👍除板友善" : ""}</strong></div>
-      <div class="meta-row"><span>1月開放時間</span><strong>${l.open} – ${l.close}</strong></div>
-      <div class="meta-row"><span>乘搭時間</span><strong>約 ${l.mins} 分鐘</strong></div>
-      <div class="tag-warn">🕒 1月尾班截龍時間：${l.close}</div>
-      <p style="font-size:12px; margin-top:8px; line-height:1.5;">${l.note}</p>
-    `;
-  }
-
-  function showStationInfo(s) {
-    inspector.innerHTML = `
-      <div class="info-title">📍 ${s.name} (${s.alt})</div>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">座標：${s.lat.toFixed(4)}°N, ${s.lng.toFixed(4)}°E</p>
-      <div style="display:flex; gap:6px;">
-        <button class="chip-btn" onclick="document.getElementById('select-from').value='${s.id}'">設為起點 A</button>
-        <button class="chip-btn" onclick="document.getElementById('select-to').value='${s.id}'">設為終點 B</button>
-      </div>
-    `;
-  }
-
-  function openCamModal(cam) {
-    document.getElementById("cam-title").textContent = `📹 ${cam.name} (${cam.alt})`;
-    document.getElementById("cam-iframe").src = cam.url;
-    document.getElementById("cam-ext-link").href = cam.url;
-    document.getElementById("cam-modal").classList.add("open");
-  }
+  });
 
   document.getElementById("btn-close-cam").addEventListener("click", () => {
     document.getElementById("cam-modal").classList.remove("open");
     document.getElementById("cam-iframe").src = "";
   });
 
-  // 10. 初始化下拉選單、6日行程與頂部地圖開關
-  const selFrom = document.getElementById("select-from");
-  const selTo = document.getElementById("select-to");
-  VT_DATA.stations.forEach(s => {
-    selFrom.add(new Option(`${s.name} (${s.alt})`, s.id));
-    selTo.add(new Option(`${s.name} (${s.alt})`, s.id));
-  });
-  selFrom.value = "hotel_caron";
-  selTo.value = "cime_caron";
+  // 3. 狀態管理與顏色定義
+  const STORAGE_COMBOS_KEY = "vt_saved_combos_v1";
+  const STORAGE_OSM_CACHE = "vt_osm_cache_v2";
 
-  document.getElementById("mode-fast").addEventListener("click", (e) => {
-    routingMode = "fast";
-    e.target.classList.add("active");
-    document.getElementById("mode-board").classList.remove("active");
-  });
-  document.getElementById("mode-board").addEventListener("click", (e) => {
-    routingMode = "board";
-    e.target.classList.add("active");
-    document.getElementById("mode-fast").classList.remove("active");
-  });
-  document.getElementById("btn-calc-route").addEventListener("click", handleCalculateRoute);
+  const diffColors = { green: "#22c55e", blue: "#3b82f6", red: "#ef4444", black: "#f4f4f5" };
+  const diffLabel = { green: "🟢 綠道", blue: "🔵 藍道", red: "🔴 紅道", black: "⚫ 黑道" };
 
-  const itineraryList = document.getElementById("itinerary-list");
-  VT_DATA.days.forEach(d => {
-    const card = document.createElement("div");
-    card.className = "day-card";
-    card.innerHTML = `
-      <div class="day-header"><span>${d.date}</span><span style="color:var(--highlight)">Day ${d.day}</span></div>
-      <div style="font-size:12px; font-weight:600; margin-bottom:2px;">${d.title}</div>
-      <div class="day-sub">${d.focus}</div>
-    `;
-    card.addEventListener("click", () => {
-      document.querySelectorAll(".day-card").forEach(c => c.classList.remove("active"));
-      card.classList.add("active");
-      highlightIdsOnMap(new Set([...d.lifts, ...d.pistes]));
-      dayDetail.innerHTML = `
-        <div class="info-title" style="color:var(--highlight)">${d.date} — ${d.title}</div>
-        <div class="tag-warn" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#bae6fd;">🏂 ${d.boardTip}</div>
-        <ul class="step-list">${d.schedule.map(st => `<li>${st}</li>`).join("")}</ul>
-      `;
+  let catalogItems = []; // { id, name, kind: 'piste'|'lift', diff, diffLevel, liftType, openHours, coords: [ [[lat,lng],...] ] }
+  const itemById = {};
+  const layerById = {}; // id -> L.featureGroup of polylines
+
+  let currentMaxDiff = 4;
+  let currentTab = "all";
+  let activeBuilderSteps = []; // array of item IDs
+  let editingComboId = null;
+  let savedCombos = JSON.parse(localStorage.getItem(STORAGE_COMBOS_KEY) || "null") || [
+    {
+      id: "default_day1",
+      name: "範例：Day 1 酒店出發熱身組合",
+      day: "18 Jan (Day 1)",
+      note: "由 470 Grande Rue 落 Pionniers，刷 Dalles 闊藍道",
+      steps: [] // 將喺載入 OSM 後自動匹配名稱或由用戶自由加減
+    }
+  ];
+
+  // 4. 由 OpenStreetMap Overpass API 實時拉取 Val Thorens & Orelle 全量雪道與纜車
+  function mapOsmDifficulty(tag) {
+    const t = (tag || "").toLowerCase();
+    if (t === "novice" || t === "green") return { diff: "green", level: 1 };
+    if (t === "easy" || t === "blue") return { diff: "blue", level: 2 };
+    if (t === "intermediate" || t === "red") return { diff: "red", level: 3 };
+    if (t === "advanced" || t === "expert" || t === "freeride" || t === "black") return { diff: "black", level: 4 };
+    return { diff: "blue", level: 2 };
+  }
+
+  function inferLiftHours(name, type) {
+    const n = name.toLowerCase();
+    if (n.includes("rosaël") || n.includes("rosael") || n.includes("bouchet") || n.includes("orelle")) {
+      return "09:05–15:50 (⚠️跨谷早截)";
+    }
+    if (n.includes("caron") || n.includes("péclet") || n.includes("peclet") || n.includes("grand fond") || n.includes("col")) {
+      return "09:00–16:10 (高海拔線)";
+    }
+    return "09:00–16:30 (1月標準)";
+  }
+
+  async function loadAllPistesAndLifts(forceRefresh = false) {
+    const badge = document.getElementById("osm-count-badge");
+    badge.textContent = "⏳ 正在從 OpenStreetMap 同步全場真實雪道...";
+
+    if (!forceRefresh) {
+      const cached = localStorage.getItem(STORAGE_OSM_CACHE);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 20) {
+            buildMapAndDirectory(parsed);
+            badge.textContent = `✅ 已載入全場 ${parsed.length} 條真實雪道與纜車 (快取)`;
+            return;
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Bounding Box 涵蓋 Val Thorens, Cime Caron, Boismint, Col de la Chambre 及 Orelle
+    const query = `[out:json][timeout:25];
+      (
+        way["piste:type"="downhill"]["name"](45.255,6.535,45.332,6.665);
+        way["aerialway"]["name"](45.255,6.535,45.332,6.665);
+      );
+      out geom;`;
+
+    const endpoints = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter"
+    ];
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(`${url}?data=${encodeURIComponent(query)}`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.elements && data.elements.length > 0) {
+          const merged = processOsmElements(data.elements);
+          localStorage.setItem(STORAGE_OSM_CACHE, JSON.stringify(merged));
+          buildMapAndDirectory(merged);
+          badge.textContent = `✅ 已同步 ${merged.length} 條官方雪道與纜車`;
+          return;
+        }
+      } catch (err) {
+        console.warn("Overpass endpoint failed, trying next...", err);
+      }
+    }
+
+    badge.textContent = "⚠️ 離線模式 (使用內置核心雪道)";
+  }
+
+  // 將同名嘅多段 OSM Way 合併為單一可選雪道/纜車項目
+  function processOsmElements(elements) {
+    const grouped = {};
+    elements.forEach(el => {
+      if (!el.tags || !el.tags.name || !el.geometry) return;
+      const name = el.tags.name.trim();
+      const isLift = Boolean(el.tags.aerialway);
+      const kind = isLift ? "lift" : "piste";
+
+      // 過濾純魔毯或酒店私人升降機
+      if (isLift && ["magic_carpet", "platter", "rope_tow", "goods"].includes(el.tags.aerialway)) return;
+
+      const key = `${kind}_${name.toLowerCase()}`;
+      const lineCoords = el.geometry.map(pt => [Number(pt.lat.toFixed(5)), Number(pt.lon.toFixed(5))]);
+
+      if (!grouped[key]) {
+        const dInfo = isLift ? { diff: null, level: 0 } : mapOsmDifficulty(el.tags["piste:difficulty"]);
+        grouped[key] = {
+          id: key.replace(/[^a-z0-9_]/g, "_"),
+          name,
+          kind,
+          diff: dInfo.diff,
+          diffLevel: dInfo.level,
+          liftType: isLift ? el.tags.aerialway.toUpperCase() : null,
+          openHours: isLift ? inferLiftHours(name, el.tags.aerialway) : null,
+          coords: [lineCoords]
+        };
+      } else {
+        grouped[key].coords.push(lineCoords);
+      }
     });
-    itineraryList.appendChild(card);
+
+    return Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // 5. 繪製全場地圖線條與建立左側搜尋目錄
+  function buildMapAndDirectory(items) {
+    catalogItems = items;
+    pisteLayerGroup.clearLayers();
+    liftLayerGroup.clearLayers();
+    Object.keys(itemById).forEach(k => delete itemById[k]);
+    Object.keys(layerById).forEach(k => delete layerById[k]);
+
+    items.forEach(item => {
+      itemById[item.id] = item;
+      const fg = L.featureGroup();
+
+      item.coords.forEach(segment => {
+        const isBlack = item.diff === "black";
+        const poly = L.polyline(segment, {
+          color: item.kind === "lift" ? "#f59e0b" : diffColors[item.diff],
+          weight: item.kind === "lift" ? 3 : 4,
+          opacity: 0.88,
+          dashArray: item.kind === "lift" ? "5, 6" : (isBlack ? "6, 5" : null)
+        });
+
+        const tip = item.kind === "lift"
+          ? `⚡ <strong>${item.name}</strong> (${item.liftType} | ${item.openHours})<br>👉 點擊加入自訂組合`
+          : `🏂 <strong>${item.name}</strong> [${diffLabel[item.diff]}]<br>👉 點擊加入自訂組合`;
+
+        poly.bindTooltip(tip, { sticky: true });
+        poly.on("click", (e) => {
+          L.DomEvent.stopPropagation(e);
+          addStepToBuilder(item.id);
+        });
+        fg.addLayer(poly);
+      });
+
+      layerById[item.id] = fg;
+      if (item.kind === "lift") fg.addTo(liftLayerGroup);
+      else fg.addTo(pisteLayerGroup);
+    });
+
+    renderDirectoryList();
+    renderSavedCombos();
+  }
+
+  // 6. 左側全場雪道與纜車搜尋清單
+  function renderDirectoryList() {
+    const listEl = document.getElementById("directory-list");
+    const q = document.getElementById("search-input").value.trim().toLowerCase();
+    listEl.innerHTML = "";
+
+    const filtered = catalogItems.filter(it => {
+      if (currentTab !== "all" && it.kind !== currentTab) return false;
+      if (it.kind === "piste" && it.diffLevel > currentMaxDiff) return false;
+      if (q && !it.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div style="font-size:12px;color:var(--text-muted);padding:12px;text-align:center;">搵唔到符合條件嘅雪道或纜車</div>`;
+      return;
+    }
+
+    filtered.forEach(it => {
+      const row = document.createElement("div");
+      row.className = "dir-item";
+
+      const badgeColor = it.kind === "lift" ? "#f59e0b" : diffColors[it.diff];
+      const subText = it.kind === "lift"
+        ? `⚡ 纜車 (${it.liftType}) • ${it.openHours}`
+        : `${diffLabel[it.diff]}`;
+
+      row.innerHTML = `
+        <div class="dir-item-info">
+          <div class="dir-item-name" style="color:${badgeColor}">${it.name}</div>
+          <div class="dir-item-sub">${subText}</div>
+        </div>
+        <button class="btn-add-step" title="加入右邊組合">+ 加入</button>
+      `;
+
+      // 點擊列：地圖飛去該雪道/纜車並閃爍提示
+      row.addEventListener("click", () => focusItemOnMap(it.id));
+      // 點擊「+ 加入」掣：直接加入自訂路線組合
+      row.querySelector(".btn-add-step").addEventListener("click", (e) => {
+        e.stopPropagation();
+        addStepToBuilder(it.id);
+      });
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function focusItemOnMap(id) {
+    const fg = layerById[id];
+    if (!fg) return;
+    map.fitBounds(fg.getBounds(), { padding: [70, 70], maxZoom: 16 });
+    fg.eachLayer(l => l.setStyle({ weight: 8, opacity: 1 }));
+    setTimeout(() => updateMapHighlight(), 1200);
+  }
+
+  // 7. 頂部「累積難度 Filter」邏輯 (撳藍色 = 高亮綠+藍)
+  function applyCumulativeFilter(maxLvl) {
+    currentMaxDiff = maxLvl;
+    updateMapHighlight();
+    renderDirectoryList();
+  }
+
+  document.querySelectorAll(".lvl-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".lvl-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      applyCumulativeFilter(parseInt(btn.getAttribute("data-level"), 10));
+    });
   });
 
-  // 圖磚與圖層切換按鈕
+  // 8. 右側：自訂組合編輯器 (Add / Reorder / Remove / Highlight)
+  function addStepToBuilder(id) {
+    if (!itemById[id]) return;
+    activeBuilderSteps.push(id);
+    renderBuilderSteps();
+    updateMapHighlight();
+    document.getElementById("map-status").innerHTML = `✅ 已將 <strong>${itemById[id].name}</strong> 加入右側路線組合（共 ${activeBuilderSteps.length} 步）`;
+  }
+
+  function renderBuilderSteps() {
+    const box = document.getElementById("builder-steps");
+    document.getElementById("builder-count").textContent = `${activeBuilderSteps.length} 步`;
+
+    if (activeBuilderSteps.length === 0) {
+      box.innerHTML = `<div style="font-size:11.5px; color:var(--text-muted); text-align:center; padding-top:14px;">尚未加入任何纜車或雪道（請點擊地圖線條或左側「+ 加入」）</div>`;
+      return;
+    }
+
+    box.innerHTML = "";
+    activeBuilderSteps.forEach((id, idx) => {
+      const it = itemById[id];
+      if (!it) return;
+      const color = it.kind === "lift" ? "#f59e0b" : diffColors[it.diff];
+      const icon = it.kind === "lift" ? "⚡" : "🏂";
+
+      const chip = document.createElement("div");
+      chip.className = "step-chip";
+      chip.innerHTML = `
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <strong>${idx + 1}.</strong> ${icon} <span style="color:${color};font-weight:600;">${it.name}</span>
+        </span>
+        <div class="step-actions">
+          <button class="mini-btn" data-act="up" title="上移">↑</button>
+          <button class="mini-btn" data-act="down" title="下移">↓</button>
+          <button class="mini-btn del" data-act="del" title="移除">✕</button>
+        </div>
+      `;
+
+      chip.querySelector('[data-act="up"]').addEventListener("click", () => {
+        if (idx === 0) return;
+        [activeBuilderSteps[idx - 1], activeBuilderSteps[idx]] = [activeBuilderSteps[idx], activeBuilderSteps[idx - 1]];
+        renderBuilderSteps();
+      });
+      chip.querySelector('[data-act="down"]').addEventListener("click", () => {
+        if (idx === activeBuilderSteps.length - 1) return;
+        [activeBuilderSteps[idx + 1], activeBuilderSteps[idx]] = [activeBuilderSteps[idx], activeBuilderSteps[idx + 1]];
+        renderBuilderSteps();
+      });
+      chip.querySelector('[data-act="del"]').addEventListener("click", () => {
+        activeBuilderSteps.splice(idx, 1);
+        renderBuilderSteps();
+        updateMapHighlight();
+      });
+
+      box.appendChild(chip);
+    });
+  }
+
+  // 當編輯器有步驟時，高亮該組合；否則按頂部累積難度顯示全場
+  function updateMapHighlight(customStepList = null) {
+    const targetSteps = customStepList !== null ? customStepList : activeBuilderSteps;
+    const hasSelection = targetSteps.length > 0;
+    const activeSet = new Set(targetSteps);
+
+    catalogItems.forEach(it => {
+      const fg = layerById[it.id];
+      if (!fg) return;
+
+      if (hasSelection) {
+        if (activeSet.has(it.id)) {
+          fg.eachLayer(l => {
+            l.setStyle({
+              opacity: 1,
+              weight: 7,
+              color: it.kind === "lift" ? "#fbbf24" : diffColors[it.diff]
+            });
+            l.bringToFront();
+          });
+        } else {
+          fg.eachLayer(l => l.setStyle({ opacity: 0.12, weight: 2 }));
+        }
+      } else {
+        // 無選取特定組合時，套用累積難度 Filter
+        if (it.kind === "piste") {
+          const pass = it.diffLevel <= currentMaxDiff;
+          fg.eachLayer(l => {
+            l.setStyle({
+              opacity: pass ? 0.9 : 0.08,
+              weight: pass ? 4 : 1.5,
+              color: diffColors[it.diff]
+            });
+            if (pass) l.bringToFront();
+          });
+        } else {
+          fg.eachLayer(l => l.setStyle({ opacity: 0.85, weight: 3, color: "#f59e0b" }));
+        }
+      }
+    });
+  }
+
+  // 9. 儲存、讀取、修改、刪除自訂組合 (localStorage CRUD)
+  function saveCombosToStorage() {
+    localStorage.setItem(STORAGE_COMBOS_KEY, JSON.stringify(savedCombos));
+    renderSavedCombos();
+  }
+
+  document.getElementById("btn-save-combo").addEventListener("click", () => {
+    if (activeBuilderSteps.length === 0) {
+      alert("請先喺地圖或左邊清單揀選至少一條纜車或雪道！");
+      return;
+    }
+    const nameInput = document.getElementById("combo-name");
+    const name = nameInput.value.trim() || `自訂路線 #${savedCombos.length + 1}`;
+    const day = document.getElementById("combo-day").value;
+    const note = document.getElementById("combo-note").value.trim();
+
+    if (editingComboId) {
+      const idx = savedCombos.findIndex(c => c.id === editingComboId);
+      if (idx > -1) {
+        savedCombos[idx] = { id: editingComboId, name, day, note, steps: [...activeBuilderSteps] };
+      }
+      editingComboId = null;
+    } else {
+      savedCombos.unshift({
+        id: "combo_" + Date.now(),
+        name,
+        day,
+        note,
+        steps: [...activeBuilderSteps]
+      });
+    }
+
+    saveCombosToStorage();
+    document.getElementById("map-status").innerHTML = `💾 已成功儲存組合：<strong>${name} (${day})</strong>！`;
+  });
+
+  document.getElementById("btn-clear-builder").addEventListener("click", () => {
+    activeBuilderSteps = [];
+    editingComboId = null;
+    document.getElementById("combo-name").value = "";
+    document.getElementById("combo-note").value = "";
+    renderBuilderSteps();
+    updateMapHighlight();
+  });
+
+  function renderSavedCombos() {
+    const container = document.getElementById("saved-combos-list");
+    container.innerHTML = "";
+
+    if (savedCombos.length === 0) {
+      container.innerHTML = `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px;">尚未有儲存嘅路線組合</div>`;
+      return;
+    }
+
+    savedCombos.forEach(combo => {
+      const card = document.createElement("div");
+      card.className = "combo-card" + (editingComboId === combo.id ? " active" : "");
+
+      const stepNames = combo.steps
+        .map((id, i) => itemById[id] ? `${i + 1}.${itemById[id].name}` : null)
+        .filter(Boolean)
+        .join(" ➔ ") || "（點擊「編輯」喺地圖揀選雪道）";
+
+      card.innerHTML = `
+        <div class="combo-header">
+          <span class="combo-title">${combo.name}</span>
+          <span class="combo-day">${combo.day}</span>
+        </div>
+        ${combo.note ? `<div style="font-size:11px;color:#7dd3fc;">📝 ${combo.note}</div>` : ""}
+        <div class="combo-steps-preview">${stepNames}</div>
+        <div class="combo-actions">
+          <button class="mini-btn" data-act="view">👁️ 地圖高亮</button>
+          <button class="mini-btn" data-act="edit">✏️ 載入編輯</button>
+          <button class="mini-btn del" data-act="delete">🗑️ 刪除</button>
+        </div>
+      `;
+
+      card.querySelector('[data-act="view"]').addEventListener("click", () => {
+        document.querySelectorAll(".combo-card").forEach(c => c.classList.remove("active"));
+        card.classList.add("active");
+        updateMapHighlight(combo.steps);
+      });
+
+      card.querySelector('[data-act="edit"]').addEventListener("click", () => {
+        editingComboId = combo.id;
+        document.getElementById("combo-name").value = combo.name;
+        document.getElementById("combo-day").value = combo.day;
+        document.getElementById("combo-note").value = combo.note || "";
+        activeBuilderSteps = [...combo.steps];
+        renderBuilderSteps();
+        updateMapHighlight();
+        renderSavedCombos();
+      });
+
+      card.querySelector('[data-act="delete"]').addEventListener("click", () => {
+        savedCombos = savedCombos.filter(c => c.id !== combo.id);
+        if (editingComboId === combo.id) editingComboId = null;
+        saveCombosToStorage();
+        updateMapHighlight();
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  // 10. 匯出 / 匯入 JSON 備份與 UI 事件綁定
+  document.getElementById("btn-export-json").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(savedCombos, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "val_thorens_2027_combos.json";
+    a.click();
+  });
+
+  document.getElementById("btn-import-json").addEventListener("click", () => {
+    document.getElementById("file-import").click();
+  });
+  document.getElementById("file-import").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (Array.isArray(imported)) {
+          savedCombos = imported;
+          saveCombosToStorage();
+        }
+      } catch (err) { alert("JSON 格式錯誤"); }
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("search-input").addEventListener("input", renderDirectoryList);
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentTab = btn.getAttribute("data-tab");
+      renderDirectoryList();
+    });
+  });
+
+  document.getElementById("btn-refresh-osm").addEventListener("click", () => loadAllPistesAndLifts(true));
+  document.getElementById("btn-show-all-map").addEventListener("click", () => {
+    document.querySelectorAll(".combo-card").forEach(c => c.classList.remove("active"));
+    updateMapHighlight([]);
+  });
+
   document.getElementById("btn-tile-hybrid").addEventListener("click", (e) => {
     map.addLayer(googleHybrid); map.removeLayer(googleTerrain);
     e.target.classList.add("active"); document.getElementById("btn-tile-terrain").classList.remove("active");
@@ -946,17 +1030,9 @@ const VT_DATA = {
     if (map.hasLayer(camLayerGroup)) { map.removeLayer(camLayerGroup); e.target.classList.remove("active"); }
     else { map.addLayer(camLayerGroup); e.target.classList.add("active"); }
   });
-  document.getElementById("btn-clear-highlight").addEventListener("click", () => {
-    document.querySelectorAll(".day-card").forEach(c => c.classList.remove("active"));
-    applyCumulativeDifficulty(currentMaxDiff);
-    map.setView([45.2974, 6.5880], 14);
-  });
 
-  // 啟動渲染
-  renderPistes();
-  renderLifts();
-  renderStations();
-  renderCams();
+  // 啟動載入全場 OSM 雪道與纜車
+  loadAllPistesAndLifts(false);
 })();
   </script>
 </body>
