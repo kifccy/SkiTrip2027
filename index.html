@@ -689,68 +689,124 @@
     renderBuilderSteps();
     renderSavedCombos();
   }
+// ================= [替換 STAGE 2 內嘅第 5 部分：100% 真實 OSM 曲線同步引擎] =================
+  const EXACT_OSM_CACHE_KEY = "vt_osm_cache_v4_exact";
 
-  // 5. 背景同步 OpenStreetMap 全場 110+ 條雪道並與 CORE_SEED 無縫合併
   async function syncFromOverpass(manual = false) {
     const badge = document.getElementById("osm-status-badge");
-    badge.textContent = "⏳ 同步全場 OSM 數據中...";
+    badge.textContent = "⏳ 正在下載 OpenStreetMap 100% 真實彎曲軌跡...";
 
-    const query = `[out:json][timeout:20];(way["piste:type"="downhill"]["name"](45.255,6.535,45.332,6.665);way["aerialway"]["name"](45.255,6.535,45.332,6.665););out geom;`;
-    const urls = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+    // 同時抓取 way 與 relation (包含 piste:name 及完整幾何曲線節點 out geom)
+    const query = `[out:json][timeout:30];
+      (
+        way["piste:type"="downhill"](45.255,6.535,45.332,6.665);
+        relation["piste:type"="downhill"](45.255,6.535,45.332,6.665);
+        way["aerialway"](45.255,6.535,45.332,6.665);
+      );
+      out geom;`;
+
+    const urls = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://lz4.overpass-api.de/api/interpreter"
+    ];
 
     for (const url of urls) {
       try {
         const res = await fetch(`${url}?data=${encodeURIComponent(query)}`);
         if (!res.ok) continue;
         const data = await res.json();
-        if (data && data.elements && data.elements.length > 10) {
-          const merged = mergeOsmWithSeed(data.elements);
-          localStorage.setItem(STORAGE_OSM_CACHE, JSON.stringify(merged));
-          buildMapAndDirectory(merged);
-          badge.textContent = `✅ 全場 ${merged.length} 條雪道/纜車已就緒`;
-          if (manual) showToast(`🎉 已從 OpenStreetMap 同步全場共 ${merged.length} 條真實雪道與纜車！`);
+        if (data && data.elements && data.elements.length > 20) {
+          const exactCurves = buildExactOsmCurves(data.elements);
+          localStorage.removeItem("vt_osm_cache_v3"); // 清除舊版直線快取
+          localStorage.setItem(EXACT_OSM_CACHE_KEY, JSON.stringify(exactCurves));
+          buildMapAndDirectory(exactCurves);
+          badge.textContent = `✅ 100% OSM 真實曲線 (${exactCurves.length} 條雪道/纜車)`;
+          if (manual) showToast(`🎉 已載入全場 ${exactCurves.length} 條 100% OpenStreetMap 真實彎曲雪道與纜車！`);
           return;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Overpass node failed, trying backup...", e);
+      }
     }
-    badge.textContent = `⚡ 已載入 ${catalogItems.length} 條核心雪道 (離線可用)`;
+    badge.textContent = `⚠️ 網絡繁忙，暫用離線基底 (請按「🔄 同步」重試)`;
   }
 
-  function mergeOsmWithSeed(elements) {
+  // 解析 OSM Way 與 Relation 幾何點，完全取代 CORE_SEED 直線
+  function buildExactOsmCurves(elements) {
     const byId = {};
-    CORE_SEED.forEach(item => { byId[item.id] = item; });
+    const seenWayIds = new Set();
 
-    elements.forEach(el => {
-      if (!el.tags || !el.tags.name || !el.geometry) return;
-      const name = el.tags.name.trim();
-      const isLift = Boolean(el.tags.aerialway);
-      if (isLift && ["magic_carpet", "platter", "rope_tow", "goods"].includes(el.tags.aerialway)) return;
+    function parseDiff(tags) {
+      const t = ((tags && (tags["piste:difficulty"] || tags["difficulty"])) || "").toLowerCase();
+      if (t === "novice" || t === "green") return { diff: "green", level: 1 };
+      if (t === "easy" || t === "blue") return { diff: "blue", level: 2 };
+      if (t === "intermediate" || t === "red") return { diff: "red", level: 3 };
+      if (["advanced", "expert", "freeride", "extreme", "black"].includes(t)) return { diff: "black", level: 4 };
+      return { diff: "blue", level: 2 };
+    }
 
+    function addSegment(name, isLift, tags, geomArray) {
+      if (!geomArray || geomArray.length < 2) return;
+      const cleanName = name.trim();
       const kind = isLift ? "lift" : "piste";
-      const id = `${kind}_${name.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
-      const coords = el.geometry.map(pt => [Number(pt.lat.toFixed(5)), Number(pt.lon.toFixed(5))]);
+      const id = `${kind}_${cleanName.toLowerCase().replace(/[^a-z0-9\u00C0-\u017F]/g, "_")}`;
 
-      const t = (el.tags["piste:difficulty"] || "").toLowerCase();
-      const diff = t === "novice" ? "green" : (t === "intermediate" ? "red" : (["advanced","expert","freeride"].includes(t) ? "black" : "blue"));
-      const diffLevel = { green: 1, blue: 2, red: 3, black: 4 }[diff];
+      // 保留小數點後 6 位 (約 0.11 米精度)，100% 貼合 OpenSnowMap 底圖曲線
+      const coords = geomArray.map(pt => [Number(pt.lat.toFixed(6)), Number(pt.lon.toFixed(6))]);
+      const dInfo = isLift ? { diff: null, level: 0 } : parseDiff(tags);
+      const nLower = cleanName.toLowerCase();
+      const hours = isLift
+        ? (nLower.includes("rosa") || nLower.includes("orelle") || nLower.includes("bouchet")
+            ? "09:05–15:50 (⚠️跨谷早截)"
+            : "09:00–16:20 (1月標準)")
+        : null;
 
       if (!byId[id]) {
         byId[id] = {
-          id, name, kind,
-          diff: isLift ? null : diff,
-          diffLevel: isLift ? 0 : diffLevel,
-          liftType: isLift ? el.tags.aerialway.toUpperCase() : null,
-          openHours: isLift ? (name.toLowerCase().includes("rosa") || name.toLowerCase().includes("orelle") ? "09:05–15:50" : "09:00–16:20") : null,
+          id,
+          name: cleanName,
+          kind,
+          diff: dInfo.diff,
+          diffLevel: dInfo.level,
+          liftType: isLift ? (tags.aerialway || "LIFT").toUpperCase() : null,
+          openHours: hours,
           coords: [coords]
         };
-      } else if (!CORE_SEED.some(s => s.id === id)) {
+      } else {
         byId[id].coords.push(coords);
       }
+    }
+
+    // 第一輪：處理所有具名 Way (雪道與纜車)
+    elements.forEach(el => {
+      if (el.type !== "way" || !el.tags || !el.geometry) return;
+      const isLift = Boolean(el.tags.aerialway);
+      if (isLift && ["goods", "zip_line", "canopy", "station", "pylon"].includes(el.tags.aerialway)) return;
+
+      const name = el.tags["piste:name"] || el.tags.name || el.tags["piste:ref"];
+      if (!name) return;
+
+      seenWayIds.add(el.id);
+      addSegment(name, isLift, el.tags, el.geometry);
+    });
+
+    // 第二輪：處理 Relation (將無獨立寫名但屬於長雪道嘅彎曲分段補齊)
+    elements.forEach(el => {
+      if (el.type !== "relation" || !el.tags || !el.members) return;
+      const name = el.tags["piste:name"] || el.tags.name || el.tags["piste:ref"];
+      if (!name) return;
+
+      el.members.forEach(m => {
+        if (m.type === "way" && m.geometry && !seenWayIds.has(m.ref)) {
+          seenWayIds.add(m.ref);
+          addSegment(name, false, el.tags, m.geometry);
+        }
+      });
     });
 
     return Object.values(byId).sort((a, b) => a.name.localeCompare(b.name));
   }
-
   // 6. 搜尋目錄與累積難度 Filter
   function renderDirectoryList() {
     const listEl = document.getElementById("directory-list");
@@ -1027,10 +1083,15 @@
   };
 
   // 啟動：0.01秒即刻載入快取或內置核心庫，再於背景自動擴充全場 OSM 雪道
-  const cachedOsm = JSON.parse(localStorage.getItem(STORAGE_OSM_CACHE) || "null");
-  buildMapAndDirectory(cachedOsm && cachedOsm.length >= CORE_SEED.length ? cachedOsm : CORE_SEED);
-  document.getElementById("osm-status-badge").textContent = `✅ 已就緒 (${catalogItems.length} 條路線)`;
-  if (!cachedOsm) syncFromOverpass(false);
+// 啟動：優先載入 100% OSM 真實曲線快取，若無則先顯示基底並即刻去 Overpass 下載曲線
+  const exactCached = JSON.parse(localStorage.getItem(EXACT_OSM_CACHE_KEY) || "null");
+  if (exactCached && exactCached.length > 20) {
+    buildMapAndDirectory(exactCached);
+    document.getElementById("osm-status-badge").textContent = `✅ 100% OSM 曲線 (${exactCached.length} 條路線)`;
+  } else {
+    buildMapAndDirectory(CORE_SEED);
+    syncFromOverpass(true);
+  }
 })();
   </script>
 </body>
